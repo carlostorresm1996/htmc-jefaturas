@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Jefaturas – HTMC IESS</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --azul:#003876;--azul-mid:#00539B;--azul-light:#E8F0FA;
+  --verde:#006B3F;--verde-mid:#008A50;--verde-light:#E6F4EE;
+  --oro:#C8922A;--oro-light:#FDF3E1;
+  --rojo:#9B1C1C;--rojo-light:#FEF2F2;
+  --gris-light:#F8FAFC;--gris-50:#F1F5F9;
+  --border:#E2E8F0;--text:#1E293B;--text-muted:#64748B;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06);--shadow-md:0 4px 16px rgba(0,0,0,.08);--shadow-lg:0 16px 48px rgba(0,0,0,.14);
+  --r:12px;--rs:8px;
+  --jef:#003876;--jef-mid:#00539B;--jef-light:#E8F0FA;
+}
+body.cap{--jef:#006B3F;--jef-mid:#008A50;--jef-light:#E6F4EE}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#EEF2F7;color:var(--text);font-size:14px;min-height:100vh}
+
+/* SYNC BAR */
+.syncbar{background:var(--jef);color:rgba(255,255,255,.85);font-size:11px;padding:4px 20px;display:flex;align-items:center;gap:8px;transition:background .3s}
+.syncbar.ok{background:var(--verde)}
+.syncbar.err{background:var(--rojo)}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.syncbar.syncing .sync-dot{animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* JEF SELECTOR */
+.jsel{background:white;border-bottom:1px solid var(--border);display:flex}
+.jopt{flex:1;padding:10px 20px;border:none;background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--text-muted);transition:all .2s;border-bottom:3px solid transparent;display:flex;align-items:center;justify-content:center;gap:7px}
+.jopt.ae{background:var(--azul-light);color:var(--azul);border-bottom-color:var(--azul);font-weight:600}
+.jopt.ac{background:var(--verde-light);color:var(--verde);border-bottom-color:var(--verde);font-weight:600}
+
+/* HEADER */
+.hdr{color:white;position:sticky;top:0;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,.2);transition:background .3s}
+.hdr.eval{background:linear-gradient(135deg,#003876,#00539B)}
+.hdr.cap{background:linear-gradient(135deg,#004D2C,#006B3F)}
+.hdr-in{display:flex;align-items:center;gap:14px;padding:11px 26px;max-width:1600px;margin:0 auto}
+.logo{width:46px;height:46px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:10px;font-weight:700;color:var(--azul);text-align:center;line-height:1.15;box-shadow:0 2px 8px rgba(0,0,0,.2);border:2.5px solid rgba(200,146,42,.6);flex-shrink:0}
+.logo-t .i{font-size:9px;letter-spacing:.1em;text-transform:uppercase;opacity:.7}
+.logo-t .n{font-family:'Playfair Display',serif;font-size:13px;font-weight:700;line-height:1.2}
+.logo-t .s{font-size:10px;opacity:.6}
+.hdiv{width:1px;height:38px;background:rgba(255,255,255,.2);margin:0 6px;flex-shrink:0}
+.htit h1{font-family:'Playfair Display',serif;font-size:17px;font-weight:600}
+.htit p{font-size:11px;opacity:.65;margin-top:1px}
+.hright{margin-left:auto;display:flex;align-items:center;gap:10px}
+.hdate{font-size:11px;opacity:.7;text-align:right;white-space:nowrap}
+.hdate b{display:block;font-size:13px;opacity:1;font-weight:500}
+.gsw{position:relative}
+.gsw input{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:white;border-radius:20px;padding:6px 14px 6px 30px;font-size:12px;width:190px;transition:all .2s}
+.gsw input::placeholder{color:rgba(255,255,255,.55)}
+.gsw input:focus{background:rgba(255,255,255,.22);outline:none;width:230px}
+.gs-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;opacity:.65}
+.gsr{position:absolute;top:calc(100%+8px);right:0;width:340px;background:white;border-radius:var(--r);box-shadow:var(--shadow-lg);border:1px solid var(--border);max-height:340px;overflow-y:auto;z-index:100;display:none}
+.gsr.open{display:block}
+.gsr-item{padding:9px 13px;border-bottom:1px solid #F1F5F9;cursor:pointer;transition:background .1s}
+.gsr-item:hover{background:var(--gris-50)}
+.gsr-item:last-child{border-bottom:none}
+.gsr-t{font-size:13px;font-weight:500}
+.gsr-s{font-size:11px;color:var(--text-muted);margin-top:1px}
+
+/* MAIN */
+.main{max-width:1600px;margin:0 auto;padding:20px 26px 60px}
+
+/* TABS */
+.tabs-w{display:flex;gap:4px;margin-bottom:18px;background:white;padding:5px;border-radius:var(--r);box-shadow:var(--shadow-sm);width:fit-content;flex-wrap:wrap}
+.tab{padding:7px 14px;border:none;background:transparent;border-radius:var(--rs);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--text-muted);transition:all .2s;white-space:nowrap;position:relative}
+.tab:hover{color:var(--text);background:var(--gris-50)}
+.tab.active{color:white;background:var(--jef);box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.tab .bdot{position:absolute;top:4px;right:4px;width:7px;height:7px;background:var(--rojo);border-radius:50%;border:1.5px solid white}
+.panel{display:none}.panel.active{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+
+/* STATS */
+.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:18px}
+.sc{background:white;border-radius:var(--r);padding:15px 17px;box-shadow:var(--shadow-sm);border:1px solid var(--border);position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%}
+.sb::before{background:var(--azul)}.sa::before{background:var(--oro)}.sr::before{background:var(--rojo)}.sg::before{background:var(--verde)}
+.sic{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:7px}
+.sib{background:var(--azul-light)}.sia{background:var(--oro-light)}.sir{background:var(--rojo-light)}.sig{background:var(--verde-light)}
+.snum{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;line-height:1}
+.snb{color:var(--azul)}.sna{color:var(--oro)}.snr{color:var(--rojo)}.sng{color:var(--verde)}
+.slbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-top:2px;font-weight:500}
+
+/* CARD */
+.card{background:white;border-radius:var(--r);box-shadow:var(--shadow-sm);border:1px solid var(--border);overflow:hidden}
+.ch{padding:14px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ct{font-family:'Playfair Display',serif;font-size:15px;font-weight:600;flex:1}
+
+/* TOOLBAR */
+.tb{display:flex;gap:7px;flex-wrap:wrap;padding:11px 20px;border-bottom:1px solid var(--border);background:var(--gris-light);align-items:center}
+.sw{position:relative;flex:1;min-width:160px}
+.sw input{padding:7px 11px 7px 30px;width:100%}
+.si{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;opacity:.4}
+input,select,textarea{border:1px solid var(--border);border-radius:var(--rs);background:white;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:7px 10px;outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--jef);box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:7px 13px;border-radius:var(--rs);border:1px solid var(--border);background:white;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn:hover{background:var(--gris-50)}
+.btn.primary{background:var(--jef);color:white;border-color:transparent;box-shadow:0 2px 5px rgba(0,0,0,.15)}
+.btn.primary:hover{background:var(--jef-mid)}
+.btn.danger{color:var(--rojo);border-color:#FECACA}.btn.danger:hover{background:var(--rojo-light)}
+.btn.success{background:var(--verde);color:white;border-color:var(--verde)}
+.btn.amber{background:var(--oro);color:white;border-color:var(--oro)}
+.btn.sm{padding:4px 8px;font-size:11px}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--text-muted)}.btn.ghost:hover{color:var(--text);background:var(--gris-50)}
+
+/* TABLE */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--gris-50)}
+th{padding:9px 13px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:11px 13px;border-bottom:1px solid #F1F5F9;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--jef-light)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.bb{background:#DBEAFE;color:#1E40AF}.bgn{background:var(--verde-light);color:var(--verde)}
+.ba{background:var(--oro-light);color:#92400E}.br{background:var(--rojo-light);color:var(--rojo)}
+.bgr{background:#F1F5F9;color:#475569}.bp{background:#EDE9FE;color:#5B21B6}.bt{background:#CCFBF1;color:#0F766E}
+
+/* PROGRESS */
+.pw{display:flex;align-items:center;gap:6px}
+.pb{flex:1;height:5px;background:#E2E8F0;border-radius:3px;overflow:hidden;min-width:45px}
+.pf{height:100%;border-radius:3px}
+.pl{font-size:11px;font-weight:600;min-width:26px}
+
+/* EMPTY */
+.empty{padding:44px 20px;text-align:center}
+.ei{font-size:34px;margin-bottom:8px;opacity:.3}
+.empty p{color:var(--text-muted);font-size:13px}
+
+/* OVERLAY/MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.overlay.open{display:flex;animation:oIn .18s ease}
+@keyframes oIn{from{opacity:0}to{opacity:1}}
+.modal{background:white;border-radius:16px;padding:24px 28px 20px;width:640px;max-width:96vw;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:mIn .2s ease}
+.modal.wide{width:800px}.modal.xl{width:1000px}
+@keyframes mIn{from{opacity:0;transform:scale(.96) translateY(6px)}to{opacity:1;transform:scale(1)}}
+.mh{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:10px}
+.mh h3{font-family:'Playfair Display',serif;font-size:16px;font-weight:600}
+.msub{font-size:11px;color:var(--text-muted);margin-top:2px}
+.mcl{background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted);padding:2px 6px;border-radius:6px;flex-shrink:0}
+.mcl:hover{background:var(--gris-50)}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.fi{display:flex;flex-direction:column;gap:4px}
+.fi.full{grid-column:1/-1}
+.fi label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)}
+.fi input,.fi select,.fi textarea{width:100%}
+.fi textarea{resize:vertical;min-height:64px}
+.mf{display:flex;justify-content:flex-end;gap:7px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.slbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:6px;margin-top:14px;display:block}
+.chrow{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+
+/* DETAIL TABS */
+.dtabs{display:flex;gap:3px;margin-bottom:14px;background:var(--gris-50);padding:3px;border-radius:var(--rs)}
+.dtab{flex:1;padding:6px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;color:var(--text-muted);transition:all .15s}
+.dtab.active{background:white;color:var(--text);box-shadow:var(--shadow-sm)}
+.dpanel{display:none}.dpanel.active{display:block}
+.igrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px}
+.ii label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);display:block;margin-bottom:2px}
+.ii span{font-size:13px}
+
+/* TIMELINE */
+.tl{position:relative;padding-left:20px}
+.tl::before{content:'';position:absolute;left:6px;top:8px;bottom:8px;width:2px;background:var(--border)}
+.tli{position:relative;margin-bottom:11px}
+.tld{position:absolute;left:-17px;top:6px;width:11px;height:11px;border-radius:50%;border:2.5px solid white}
+.tld.done{background:var(--verde);box-shadow:0 0 0 2px var(--verde)}
+.tld.cur{background:var(--oro);box-shadow:0 0 0 2px var(--oro)}
+.tld.pend{background:#CBD5E1;box-shadow:0 0 0 2px #CBD5E1}
+.tlc{background:var(--gris-50);border-radius:var(--rs);padding:9px 12px}
+.tle{font-weight:600;font-size:12px;margin-bottom:3px;display:flex;align-items:center;gap:6px}
+.tlovr{font-size:10px;background:var(--rojo-light);color:var(--rojo);padding:1px 6px;border-radius:10px;font-weight:600}
+.tlm{font-size:11px;color:var(--text-muted);display:flex;gap:10px;flex-wrap:wrap}
+.tldur{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;margin-top:4px}
+.tldur.ok{background:var(--azul-light);color:var(--azul-mid)}
+.tldur.warn{background:var(--oro-light);color:#92400E}
+.tldur.over{background:var(--rojo-light);color:var(--rojo)}
+
+/* COMENTARIOS */
+.comi{background:var(--gris-50);border-radius:var(--rs);padding:9px 32px 9px 12px;margin-bottom:6px;position:relative}
+.comm{font-size:10px;color:var(--text-muted);margin-bottom:2px}
+.comt{font-size:13px;line-height:1.5}
+.comd{position:absolute;top:7px;right:8px;background:none;border:none;cursor:pointer;font-size:12px;color:var(--text-muted);opacity:.4;padding:2px}
+.comd:hover{opacity:1;color:var(--rojo)}
+.addcom{display:flex;gap:7px;margin-top:9px}
+.addcom input{flex:1}
+
+/* DOCS */
+.doclist{display:flex;flex-direction:column;gap:5px;margin:10px 0}
+.docitem{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--gris-50);border-radius:var(--rs);border:1px solid transparent}
+.docitem.done{background:var(--verde-light);border-color:#C0DD97}
+.docitem input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--verde)}
+.docitem label{flex:1;font-size:13px;cursor:pointer}
+.docitem.done label{text-decoration:line-through;color:var(--text-muted)}
+.adddoc{display:flex;gap:7px;margin-top:8px}
+.adddoc input{flex:1}
+
+/* ALERTS */
+.alert-banner{border-radius:var(--r);padding:13px 17px;margin-bottom:14px;display:flex;align-items:flex-start;gap:11px;border:1px solid}
+.alert-banner.danger{background:var(--rojo-light);border-color:#FECACA}
+.alert-banner.warn{background:var(--oro-light);border-color:#FDE68A}
+.alert-banner.info{background:var(--azul-light);border-color:#BFDBFE}
+.alert-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.alert-body .at{font-weight:600;font-size:13px;margin-bottom:3px}
+.alert-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:7px;margin-top:6px}
+.aitem{background:white;border-radius:var(--rs);padding:7px 11px;border:1px solid var(--border);font-size:12px}
+.aitem .an{font-weight:500}
+.aitem .as{color:var(--text-muted);font-size:11px}
+
+/* PERSONAL */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.pcard{background:white;border-radius:var(--r);border:1px solid var(--border);padding:16px;box-shadow:var(--shadow-sm)}
+.ph{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.av{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:white;flex-shrink:0;background:linear-gradient(135deg,var(--jef),var(--jef-mid));box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.ps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.pst{background:var(--gris-50);border-radius:var(--rs);padding:8px 10px;text-align:center}
+.pst .n{font-family:'Playfair Display',serif;font-size:18px;font-weight:700}
+.pst .l{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-top:1px}
+
+/* CALENDARIO */
+.cal-wrap{display:grid;grid-template-columns:1fr 300px;gap:14px;align-items:start}
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border)}
+.cal-month{font-family:'Playfair Display',serif;font-size:15px;font-weight:600}
+.cal-gd{padding:10px 14px}
+.cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px}
+.cal-dow span{text-align:center;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);padding:3px 0}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-day{min-height:64px;border-radius:var(--rs);border:1px solid transparent;padding:5px;cursor:pointer;transition:all .12s}
+.cal-day:hover{background:var(--gris-50);border-color:var(--border)}
+.cal-day.om{opacity:.3}.cal-day.today{border-color:var(--jef)!important}
+.cal-day.sel{background:var(--jef-light);border-color:var(--jef)}
+.cal-day.has-ev{background:var(--gris-50)}
+.cal-day.in-range{background:rgba(0,83,155,.07)}
+.dn{font-size:11px;font-weight:600;margin-bottom:2px}
+.cal-day.today .dn{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:10px;background:var(--jef)}
+.cev{font-size:8px;border-radius:2px;padding:1px 3px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.ev-p{background:#DBEAFE;color:#1E40AF}.ev-q{background:var(--oro-light);color:#92400E}
+.ev-a{background:var(--verde-light);color:var(--verde)}.ev-v{background:var(--rojo-light);color:var(--rojo)}
+.ev-r{background:#EDE9FE;color:#5B21B6}
+.agpanel{background:white;border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden}
+.agph{padding:12px 16px;border-bottom:1px solid var(--border)}
+.agph h4{font-family:'Playfair Display',serif;font-size:13px;font-weight:600}
+.aglist{max-height:480px;overflow-y:auto}
+.agi{padding:9px 16px;border-bottom:1px solid #F1F5F9;display:flex;gap:9px;align-items:flex-start}
+.agi:last-child{border-bottom:none}
+.agd{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.agc .at{font-size:12px;font-weight:500}
+.agc .as{font-size:10px;color:var(--text-muted);margin-top:1px}
+
+/* ETAPAS */
+.etalist{display:flex;flex-direction:column;gap:5px}
+.etai{display:flex;align-items:center;gap:7px;background:var(--gris-50);border-radius:var(--rs);padding:8px 11px;border:1px solid var(--border)}
+.etadrg{cursor:grab;color:var(--text-muted);font-size:14px;flex-shrink:0}
+.etanum{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0;background:var(--jef)}
+.etaname{flex:1;font-size:13px;font-weight:500}
+.eta-days{font-size:11px;color:var(--text-muted);white-space:nowrap}
+.addet{display:flex;gap:7px;margin-top:10px}
+.addet input{flex:1}
+
+/* PENDIENTES */
+.pend-wrap{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start}
+.pend-list{background:white;border-radius:var(--r);border:1px solid var(--border);overflow:hidden}
+.pend-list-hdr{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.pend-items{max-height:520px;overflow-y:auto}
+.pend-item{padding:10px 14px;border-bottom:1px solid #F1F5F9;cursor:pointer;transition:background .1s;position:relative}
+.pend-item:hover{background:var(--gris-50)}
+.pend-item.active{background:var(--jef-light)}
+.pend-item .pt{font-size:13px;font-weight:500}
+.pend-item .ps2{font-size:11px;color:var(--text-muted);margin-top:2px}
+.pend-item .pprog{margin-top:5px;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.pend-item .pprog-fill{height:100%;background:var(--jef);border-radius:2px}
+.pend-detail{background:white;border-radius:var(--r);border:1px solid var(--border);padding:20px}
+.pend-detail-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;color:var(--text-muted);font-size:13px}
+.pend-checklist{display:flex;flex-direction:column;gap:6px;margin:12px 0}
+.pend-step{display:flex;align-items:flex-start;gap:8px;padding:9px 11px;background:var(--gris-50);border-radius:var(--rs);border:1px solid transparent}
+.pend-step.done{background:var(--verde-light);border-color:#C0DD97}
+.pend-step input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--verde);margin-top:2px;flex-shrink:0}
+.pend-step label{flex:1;font-size:13px;cursor:pointer;line-height:1.4}
+.pend-step.done label{text-decoration:line-through;color:var(--text-muted)}
+.addstep{display:flex;gap:7px;margin-top:8px}
+.addstep input{flex:1}
+.guia-box{background:linear-gradient(135deg,var(--jef-light),white);border:1px solid var(--jef);border-radius:var(--rs);padding:12px 14px;margin-top:14px}
+.guia-box .gb-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--jef);margin-bottom:6px}
+.guia-box textarea{width:100%;border:none;background:transparent;font-size:13px;resize:none;min-height:60px;color:var(--text);line-height:1.6}
+.guia-box textarea:focus{outline:none;box-shadow:none}
+
+/* ENLAZAMIENTO */
+.enlace-wrap{display:flex;flex-direction:column;gap:14px}
+.enlace-grupo{background:white;border-radius:var(--r);border:1px solid var(--border);overflow:hidden}
+.enlace-hdr{padding:12px 18px;display:flex;align-items:center;gap:10px;background:var(--gris-50);border-bottom:1px solid var(--border)}
+.enlace-hdr .et{font-weight:600;font-size:14px;flex:1}
+.enlace-body{padding:14px 18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.enlace-card{background:var(--gris-50);border-radius:var(--rs);padding:10px 12px;border:1px solid var(--border);font-size:12px;position:relative}
+.enlace-card .ect{font-weight:600;margin-bottom:3px}
+.enlace-card .ecs{color:var(--text-muted);font-size:11px}
+.enlace-card .ecd{position:absolute;top:6px;right:8px;background:none;border:none;cursor:pointer;font-size:11px;color:var(--text-muted);opacity:.4}
+.enlace-card .ecd:hover{opacity:1;color:var(--rojo)}
+.enlace-add{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+
+/* PROCESOS VARIOS */
+.pv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.pv-box{background:white;border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden}
+.pv-box-hdr{padding:13px 16px;background:var(--jef);color:white;display:flex;align-items:center;gap:8px}
+.pv-box-hdr .pvt{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;flex:1}
+.pv-box-body{padding:13px 16px}
+.pv-sub{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.pv-sub-item{padding:8px 11px;background:var(--gris-50);border-radius:var(--rs);border-left:3px solid var(--border);font-size:12px;display:flex;align-items:center;gap:8px}
+.pv-sub-item.done{border-left-color:var(--verde);background:var(--verde-light)}
+.pv-sub-item .pvsi-t{flex:1;font-weight:500}
+.pv-sub-item .pvsi-s{font-size:10px;color:var(--text-muted)}
+.pv-guia{background:linear-gradient(135deg,var(--jef-light),white);border:1px solid var(--jef);border-radius:var(--rs);padding:10px 12px;margin-top:8px}
+.pv-guia-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--jef);margin-bottom:4px}
+.pv-guia p{font-size:12px;color:var(--text);line-height:1.6;white-space:pre-wrap}
+.addpvsub{display:flex;gap:6px;margin-top:8px}
+.addpvsub input{flex:1;font-size:12px;padding:5px 9px}
+
+/* NOTAS BLOC */
+.bloc-wrap{display:grid;grid-template-columns:220px 1fr;gap:14px;height:520px}
+.bloc-list{background:white;border-radius:var(--r);border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column}
+.bloc-list-hdr{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.bloc-list-hdr span{flex:1;font-weight:600;font-size:13px}
+.bloc-items{flex:1;overflow-y:auto}
+.bnota{padding:10px 14px;border-bottom:1px solid #F1F5F9;cursor:pointer;transition:background .1s}
+.bnota:hover{background:var(--gris-50)}
+.bnota.active{background:var(--jef-light)}
+.bnota .bt{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bnota .bd{font-size:10px;color:var(--text-muted);margin-top:2px}
+.bloc-editor{background:white;border-radius:var(--r);border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.bloc-editor-hdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.bloc-editor-hdr input{flex:1;border:none;font-family:'Playfair Display',serif;font-size:15px;font-weight:600;padding:0;background:transparent}
+.bloc-editor-hdr input:focus{outline:none;box-shadow:none}
+.bloc-ta{flex:1;border:none;padding:16px;font-family:'DM Sans',sans-serif;font-size:13px;resize:none;color:var(--text);line-height:1.7}
+.bloc-ta:focus{outline:none}
+.bloc-footer{padding:8px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.bloc-footer span{font-size:11px;color:var(--text-muted);flex:1}
+
+/* QUIPUX RESPUESTA */
+.resp-box{background:var(--verde-light);border:1px solid #C0DD97;border-radius:var(--rs);padding:12px 14px;margin-top:10px}
+.resp-box .rb-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--verde);margin-bottom:8px}
+.resp-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+.resp-row .fi label{color:var(--verde)}
+
+/* ESTADISTICAS */
+.estad-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.ecard{background:white;border-radius:var(--r);border:1px solid var(--border);padding:16px;box-shadow:var(--shadow-sm)}
+.ecard h4{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;margin-bottom:12px}
+.ebar{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.ebar-name{width:110px;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ebar-bg{flex:1;height:7px;background:var(--border);border-radius:4px;overflow:hidden}
+.ebar-fill{height:100%;border-radius:4px;background:var(--jef)}
+.ebar-val{font-size:11px;font-weight:600;min-width:28px;text-align:right;color:var(--text-muted)}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{background:var(--gris-50);border-radius:var(--rs);padding:10px 12px;text-align:center}
+.kpi .v{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--jef)}
+.kpi .l{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-top:2px}
+
+footer{text-align:center;padding:18px;color:var(--text-muted);font-size:11px}
+.sn{font-weight:500}.sro{font-size:11px;color:var(--text-muted);margin-top:1px}
+.fw5{font-weight:500}.tm{color:var(--text-muted)}
+
+/* EXPEDIENTE MODAL */
+.exp-header{background:linear-gradient(135deg,var(--jef),var(--jef-mid));color:white;padding:22px 28px;border-radius:12px 12px 0 0;margin:-24px -28px 20px}
+.exp-av{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0;border:2.5px solid rgba(255,255,255,.5)}
+.exp-stats-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:18px}
+.exp-section{margin-bottom:20px}
+.exp-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.exp-tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--gris-50);padding:4px;border-radius:var(--rs)}
+.exp-tab{flex:1;padding:7px;border:none;background:transparent;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--text-muted);transition:all .15s}
+.exp-tab.active{background:white;color:var(--text);box-shadow:var(--shadow-sm)}
+.exp-panel{display:none}.exp-panel.active{display:block}
+/* REASIGNACION */
+.reasig-box{background:var(--oro-light);border:1px solid #FDE68A;border-radius:var(--rs);padding:10px 13px;margin-top:8px}
+.reasig-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#92400E;margin-bottom:6px}
+/* PENDIENTES MEJORADO */
+.pend-priority{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.guia-toggle{display:flex;align-items:center;gap:6px;padding:8px 12px;background:linear-gradient(135deg,var(--jef-light),white);border:1px solid var(--jef);border-radius:var(--rs);cursor:pointer;font-size:12px;font-weight:500;color:var(--jef);margin-top:12px;width:100%;border-radius:var(--rs)}
+.guia-toggle:hover{opacity:.85}
+.guia-content{display:none;margin-top:6px;background:linear-gradient(135deg,var(--jef-light),white);border:1px solid var(--jef);border-radius:var(--rs);padding:12px 14px}
+.guia-content.open{display:block}
+.guia-content textarea{width:100%;border:none;background:transparent;font-size:13px;resize:none;min-height:70px;color:var(--text);line-height:1.6;font-family:'DM Sans',sans-serif}
+.guia-content textarea:focus{outline:none}
+/* QUIPUX descripcion */
+.q-desc-badge{font-size:11px;color:var(--text-muted);font-style:italic;margin-top:2px;line-height:1.4}
+</style>
+</head>
+<body>
+
+<!-- SYNC BAR -->
+<div class="syncbar syncing" id="syncbar">
+  <div class="sync-dot"></div>
+  <span id="sync-msg">Conectando con Google Sheets…</span>
+</div>
+
+<!-- JEFATURA SELECTOR -->
+<div class="jsel">
+  <button class="jopt ae" id="jopt-eval" onclick="setJef('eval')">📋 Jefatura de Evaluación del Desempeño</button>
+  <button class="jopt" id="jopt-cap" onclick="setJef('cap')">🎓 Jefatura de Capacitación y Formación</button>
+</div>
+
+<!-- HEADER -->
+<header class="hdr eval" id="hdr">
+  <div class="hdr-in">
+    <div style="display:flex;align-items:center;gap:11px;flex-shrink:0">
+      <div class="logo">HTMC<br>IESS</div>
+      <div class="logo-t">
+        <div class="i">IESS – Ecuador</div>
+        <div class="n">Teodoro Maldonado Carbo</div>
+        <div class="s">Hospital General Guayaquil</div>
+      </div>
+    </div>
+    <div class="hdiv"></div>
+    <div class="htit"><h1 id="hdr-jef">Evaluación del Desempeño</h1><p>Tablero de Control y Seguimiento</p></div>
+    <div class="hright">
+      <div class="gsw">
+        <span class="gs-icon">🔍</span>
+        <input type="text" id="gsearch" placeholder="Búsqueda global…" oninput="globalSearch(this.value)" onblur="setTimeout(()=>document.getElementById('gsr').classList.remove('open'),200)">
+        <div class="gsr" id="gsr"></div>
+      </div>
+      <div class="hdate"><span id="fdia"></span><b id="ffull"></b></div>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="tabs-w">
+    <button class="tab active" onclick="showTab('alertas')" id="tab-alertas">🚨 Alertas</button>
+    <button class="tab" onclick="showTab('procesos')">📋 Procesos</button>
+    <button class="tab" onclick="showTab('quipux')">📨 Quipux</button>
+    <button class="tab" onclick="showTab('personal')">👥 Personal</button>
+    <button class="tab" onclick="showTab('pendientes')">✅ Pendientes</button>
+    <button class="tab" onclick="showTab('enlaces')">🔗 Enlazamiento</button>
+    <button class="tab" onclick="showTab('varios')">📦 Procesos Varios</button>
+    <button class="tab" onclick="showTab('calendario')">📅 Calendario</button>
+    <button class="tab" onclick="showTab('estadisticas')">📊 Estadísticas</button>
+    <button class="tab" onclick="showTab('notas')">📝 Notas</button>
+    <button class="tab" onclick="showTab('etapas')">⚙️ Etapas</button>
+  </div>
+
+  <!-- ALERTAS -->
+  <div class="panel active" id="panel-alertas">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:600">Bandeja de Urgencias</div>
+      <div style="display:flex;gap:7px">
+        <button class="btn amber" onclick="exportExcel()">📊 Excel</button>
+        <button class="btn primary" onclick="exportPDF()">📄 PDF</button>
+      </div>
+    </div>
+    <div id="alertas-cont"></div>
+  </div>
+
+  <!-- PROCESOS -->
+  <div class="panel" id="panel-procesos">
+    <div class="sgrid" id="stats-proc"></div>
+    <div class="card">
+      <div class="ch"><div class="ct" id="proc-ct">Registro de Procesos</div><button class="btn primary" onclick="openProcNew()">＋ Nuevo</button></div>
+      <div class="tb">
+        <div class="sw"><span class="si">🔍</span><input type="text" id="buscar-proc" placeholder="Buscar…" oninput="renderProc()"></div>
+        <select id="filtro-etapa-proc" onchange="renderProc()" style="min-width:160px"><option value="">Todas las etapas</option></select>
+        <select id="filtro-estado-proc" onchange="renderProc()">
+          <option value="">Todos los estados</option><option>En proceso</option><option>Archivado</option><option>Cerrado</option>
+        </select>
+      </div>
+      <div class="tw">
+        <table><thead><tr>
+          <th>Ref.</th><th>Servidor</th><th>Etapa</th><th>Responsable</th><th>Días etapa</th><th>Días total</th><th>Estado</th><th>Acciones</th>
+        </tr></thead><tbody id="tbody-proc"></tbody></table>
+        <div id="empty-proc" class="empty" style="display:none"><div class="ei">📂</div><p>No hay procesos.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIPUX -->
+  <div class="panel" id="panel-quipux">
+    <div class="sgrid" id="stats-quip"></div>
+    <div class="card">
+      <div class="ch"><div class="ct">Quipux Reasignados</div><button class="btn primary" onclick="openQuipNew()">＋ Nuevo</button></div>
+      <div class="tb">
+        <div class="sw"><span class="si">🔍</span><input type="text" id="buscar-quip" placeholder="Buscar…" oninput="renderQuip()"></div>
+        <select id="filtro-pers-q" onchange="renderQuip()"><option value="">Todo el personal</option></select>
+        <select id="filtro-estado-q" onchange="renderQuip()">
+          <option value="">Todos los estados</option><option>Pendiente</option><option>En revisión</option><option>Respondido</option><option>Vencido</option>
+        </select>
+      </div>
+      <div class="tw">
+        <table><thead><tr>
+          <th>No. Quipux</th><th>Asunto</th><th>Asignado a</th><th>Fecha</th><th>Plazo</th><th>Avance</th><th>Respuesta</th><th>Estado</th><th>Acciones</th>
+        </tr></thead><tbody id="tbody-quip"></tbody></table>
+        <div id="empty-quip" class="empty" style="display:none"><div class="ei">📨</div><p>No hay Quipux.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PERSONAL -->
+  <div class="panel" id="panel-personal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600">Personal a Cargo</div>
+      <div style="display:flex;gap:7px">
+        <button class="btn success" onclick="enviarTodos()">✉ Resumen a todos</button>
+        <button class="btn primary" onclick="openPersNew()">＋ Agregar</button>
+      </div>
+    </div>
+    <div class="pgrid" id="cards-personal"></div>
+    <div id="empty-pers" class="empty" style="display:none"><div class="ei">👤</div><p>No hay personal.</p></div>
+  </div>
+
+  <!-- PENDIENTES -->
+  <div class="panel" id="panel-pendientes">
+    <div class="pend-wrap">
+      <div class="pend-list">
+        <div class="pend-list-hdr">
+          <span>Casos pendientes</span>
+          <button class="btn sm primary" onclick="newPendiente()">＋</button>
+        </div>
+        <div class="pend-items" id="pend-items"></div>
+      </div>
+      <div id="pend-detail">
+        <div class="pend-detail-empty"><div style="font-size:36px;opacity:.3;margin-bottom:10px">✅</div><p>Selecciona o crea un caso pendiente</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENLACES -->
+  <div class="panel" id="panel-enlaces">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:600">Expedientes Enlazados</div>
+      <button class="btn primary" onclick="newEnlace()">＋ Nuevo expediente</button>
+    </div>
+    <div class="enlace-wrap" id="enlace-wrap"></div>
+    <div id="empty-enlace" class="empty" style="display:none"><div class="ei">🔗</div><p>No hay expedientes enlazados.</p></div>
+  </div>
+
+  <!-- PROCESOS VARIOS -->
+  <div class="panel" id="panel-varios">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:600">Procesos Varios</div>
+      <button class="btn primary" onclick="newPV()">＋ Nueva carpeta</button>
+    </div>
+    <div class="pv-grid" id="pv-grid"></div>
+    <div id="empty-pv" class="empty" style="display:none"><div class="ei">📦</div><p>No hay procesos varios.</p></div>
+  </div>
+
+  <!-- CALENDARIO -->
+  <div class="panel" id="panel-calendario">
+    <div class="cal-wrap">
+      <div class="card">
+        <div class="cal-hdr">
+          <div style="display:flex;align-items:center;gap:7px">
+            <button class="btn sm ghost" onclick="calPrev()">‹</button>
+            <span class="cal-month" id="cal-lbl"></span>
+            <button class="btn sm ghost" onclick="calNext()">›</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px">
+            <span style="font-size:9px;color:var(--text-muted)">
+              <span style="display:inline-block;width:7px;height:7px;background:#DBEAFE;border-radius:2px;margin-right:2px"></span>Proc
+              <span style="display:inline-block;width:7px;height:7px;background:var(--oro-light);border-radius:2px;margin:0 2px 0 6px"></span>QX
+              <span style="display:inline-block;width:7px;height:7px;background:var(--verde-light);border-radius:2px;margin:0 2px 0 6px"></span>Agenda
+              <span style="display:inline-block;width:7px;height:7px;background:var(--rojo-light);border-radius:2px;margin:0 2px 0 6px"></span>Vence
+              <span style="display:inline-block;width:7px;height:7px;background:#EDE9FE;border-radius:2px;margin:0 2px 0 6px"></span>Rango
+            </span>
+            <button class="btn sm primary" onclick="openAgNew()">＋ Evento</button>
+          </div>
+        </div>
+        <div class="cal-gd">
+          <div class="cal-dow"><span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span></div>
+          <div class="cal-days" id="cal-days"></div>
+        </div>
+      </div>
+      <div class="agpanel">
+        <div class="agph"><h4 id="ag-panel-ttl">Próximos eventos</h4></div>
+        <div class="aglist" id="aglist"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESTADÍSTICAS -->
+  <div class="panel" id="panel-estadisticas">
+    <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:600;margin-bottom:14px">Estadísticas de Rendimiento</div>
+    <div class="estad-grid" id="estad-cont"></div>
+  </div>
+
+  <!-- NOTAS -->
+  <div class="panel" id="panel-notas">
+    <div class="bloc-wrap">
+      <div class="bloc-list">
+        <div class="bloc-list-hdr"><span>Notas rápidas</span><button class="btn sm primary" onclick="newNota()">＋</button></div>
+        <div class="bloc-items" id="bloc-items"></div>
+      </div>
+      <div class="bloc-editor">
+        <div class="bloc-editor-hdr">
+          <input type="text" id="nota-titulo" placeholder="Título…" oninput="autoSaveNota()">
+          <button class="btn sm danger" id="del-nota-btn" onclick="delNota()" style="display:none">🗑</button>
+        </div>
+        <textarea class="bloc-ta" id="nota-body" placeholder="Escribe aquí…" oninput="autoSaveNota()"></textarea>
+        <div class="bloc-footer"><span id="nota-saved">–</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ETAPAS -->
+  <div class="panel" id="panel-etapas">
+    <div class="card">
+      <div class="ch"><div class="ct" id="eta-ct">Etapas del Proceso</div><button class="btn ghost" onclick="resetEtapas()">↺ Restaurar</button></div>
+      <div style="padding:18px 20px">
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6">Define las etapas y el plazo máximo por etapa. El sistema alertará cuando se supere el plazo.</p>
+        <div class="etalist" id="etalist"></div>
+        <div class="addet">
+          <input type="text" id="new-eta-name" placeholder="Nombre de la etapa…">
+          <input type="number" id="new-eta-days" placeholder="Plazo días" min="1" style="width:120px">
+          <button class="btn primary" onclick="addEtapa()">＋ Agregar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<footer>© Hospital General Teodoro Maldonado Carbo – IESS &nbsp;|&nbsp; Sistema de Jefaturas &nbsp;|&nbsp; Datos sincronizados con Google Sheets</footer>
+
+<!-- MODAL PROCESO -->
+<div class="overlay" id="ov-proc">
+<div class="modal">
+  <div class="mh"><h3 id="proc-mt">Proceso</h3><button class="mcl" onclick="cls('ov-proc')">✕</button></div>
+  <div class="fg">
+    <div class="fi"><label>Referencia / Expediente</label><input id="p-exp" placeholder="EXP-2025-001"></div>
+    <div class="fi"><label>Fecha de inicio</label><input type="date" id="p-fecha"></div>
+    <div class="fi full"><label>Servidor / Participante</label><input id="p-servidor" placeholder="Nombres y apellidos"></div>
+    <div class="fi"><label>Cargo</label><input id="p-cargo" placeholder="Cargo"></div>
+    <div class="fi"><label>Responsable</label><select id="p-resp"><option value="">Seleccionar…</option></select></div>
+    <div class="fi full"><label>Etapa actual</label><select id="p-etapa"></select></div>
+    <div class="fi"><label>Estado</label><select id="p-estado"><option>En proceso</option><option>Archivado</option><option>Cerrado</option></select></div>
+    <div class="fi full"><label>Observaciones</label><textarea id="p-obs" placeholder="Notas…"></textarea></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="cls('ov-proc')">Cancelar</button><button class="btn primary" onclick="saveProc()">💾 Guardar</button></div>
+</div>
+</div>
+
+<!-- MODAL DETALLE PROCESO -->
+<div class="overlay" id="ov-det">
+<div class="modal wide">
+  <div class="mh">
+    <div><h3 id="det-t">Detalle</h3><div class="msub" id="det-s"></div></div>
+    <div style="display:flex;gap:7px;align-items:center">
+      <button class="btn sm" onclick="editProc()" id="btn-edit-proc">✏️ Editar</button>
+      <button class="mcl" onclick="cls('ov-det')">✕</button>
+    </div>
+  </div>
+  <div class="dtabs">
+    <button class="dtab active" onclick="showDtab('info')">📄 Info</button>
+    <button class="dtab" onclick="showDtab('hist')">🕐 Historial</button>
+    <button class="dtab" onclick="showDtab('docs')">📎 Documentos</button>
+    <button class="dtab" onclick="showDtab('coms')">💬 Comentarios</button>
+  </div>
+  <div class="dpanel active" id="dp-info">
+    <div class="igrid" id="det-ig"></div>
+    <span class="slbl">Cambiar etapa</span>
+    <div class="chrow">
+      <select id="ch-eta" style="flex:1;min-width:180px"></select>
+      <input type="date" id="ch-fd" style="width:140px">
+      <button class="btn primary" id="btn-eta" onclick="applyEtapa()">✔ Registrar</button>
+    </div>
+    <span class="slbl" style="margin-top:12px">Estado</span>
+    <div class="chrow">
+      <select id="ch-est" style="width:180px"><option>En proceso</option><option>Archivado</option><option>Cerrado</option></select>
+      <button class="btn" id="btn-est" onclick="applyEst()">Actualizar</button>
+    </div>
+  </div>
+  <div class="dpanel" id="dp-hist"><div id="tl-wrap"></div></div>
+  <div class="dpanel" id="dp-docs">
+    <div id="doclist-wrap"></div>
+    <div class="adddoc"><input type="text" id="new-doc" placeholder="Nombre del documento…"><button class="btn primary" onclick="addDoc()">＋</button></div>
+  </div>
+  <div class="dpanel" id="dp-coms">
+    <div id="coms-list"></div>
+    <div class="addcom"><input type="text" id="nuevo-com" placeholder="Comentario o novedad…" onkeydown="if(event.key==='Enter')addCom()"><button class="btn primary" onclick="addCom()">Agregar</button></div>
+  </div>
+</div>
+</div>
+
+<!-- MODAL QUIPUX -->
+<div class="overlay" id="ov-quip">
+<div class="modal">
+  <div class="mh"><h3 id="quip-mt">Quipux</h3><button class="mcl" onclick="cls('ov-quip')">✕</button></div>
+  <div class="fg">
+    <div class="fi"><label>No. Quipux</label><input id="q-num" placeholder="QX-2025-001"></div>
+    <div class="fi"><label>Fecha reasignación</label><input type="date" id="q-fecha"></div>
+    <div class="fi full"><label>Asunto</label><input id="q-asunto" placeholder="Descripción…"></div>
+    <div class="fi"><label>Asignado a</label><select id="q-asig"><option value="">Seleccionar…</option></select></div>
+    <div class="fi"><label>Plazo (días hábiles)</label><input type="number" id="q-plazo" value="15" min="1"></div>
+    <div class="fi"><label>Estado</label><select id="q-est"><option>Pendiente</option><option>En revisión</option><option>Respondido</option><option>Vencido</option></select></div>
+    <div class="fi full"><label>Descripción del contenido</label><textarea id="q-desc" placeholder="De qué trata el Quipux brevemente, contexto, antecedentes…" style="min-height:56px"></textarea></div>
+    <div class="fi full"><label>Observaciones internas</label><textarea id="q-obs" placeholder="Notas internas…"></textarea></div>
+  </div>
+  <!-- SECCIÓN RESPUESTA -->
+  <div id="resp-section" style="display:none;margin-top:14px">
+    <div class="resp-box">
+      <div class="rb-lbl">✅ Detalle de la respuesta</div>
+      <div class="resp-row">
+        <div class="fi"><label>Fecha de respuesta</label><input type="date" id="q-resp-fecha"></div>
+        <div class="fi"><label>No. Quipux de respuesta</label><input id="q-resp-num" placeholder="QX-RESP-001"></div>
+      </div>
+      <div class="fi full" style="margin-bottom:8px"><label>Cómo se respondió</label><textarea id="q-resp-como" placeholder="Descripción de cómo y qué se respondió…" style="min-height:56px"></textarea></div>
+    </div>
+  </div>
+  <div class="mf"><button class="btn" onclick="cls('ov-quip')">Cancelar</button><button class="btn primary" onclick="saveQuip()">💾 Guardar</button></div>
+</div>
+</div>
+
+<!-- MODAL PERSONAL -->
+<div class="overlay" id="ov-pers">
+<div class="modal">
+  <div class="mh"><h3>Personal a cargo</h3><button class="mcl" onclick="cls('ov-pers')">✕</button></div>
+  <div class="fg">
+    <div class="fi full"><label>Nombres y apellidos</label><input id="per-nb" placeholder="Nombre completo"></div>
+    <div class="fi"><label>Cargo / Función</label><input id="per-cg" placeholder="Cargo"></div>
+    <div class="fi"><label>Correo institucional</label><input id="per-em" type="email" placeholder="usuario@htmc.iess.gob.ec"></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="cls('ov-pers')">Cancelar</button><button class="btn primary" onclick="savePers()">💾 Guardar</button></div>
+</div>
+</div>
+
+<!-- MODAL AGENDA -->
+<div class="overlay" id="ov-ag">
+<div class="modal">
+  <div class="mh"><h3>Nuevo evento</h3><button class="mcl" onclick="cls('ov-ag')">✕</button></div>
+  <div class="fg">
+    <div class="fi full"><label>Título del evento</label><input id="ag-t" placeholder="Descripción…"></div>
+    <div class="fi"><label>Fecha inicio</label><input type="date" id="ag-fi"></div>
+    <div class="fi"><label>Fecha fin (opcional)</label><input type="date" id="ag-ff"></div>
+    <div class="fi"><label>Hora inicio (opcional)</label><input type="time" id="ag-hi"></div>
+    <div class="fi"><label>Hora fin (opcional)</label><input type="time" id="ag-hf"></div>
+    <div class="fi"><label>Tipo</label>
+      <select id="ag-tp"><option value="agenda">📌 Recordatorio</option><option value="proc">📋 Proceso</option><option value="quip">📨 Quipux</option></select>
+    </div>
+    <div class="fi full"><label>Notas</label><textarea id="ag-n" placeholder="Detalles…"></textarea></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="cls('ov-ag')">Cancelar</button><button class="btn primary" onclick="saveAg()">💾 Guardar</button></div>
+</div>
+</div>
+
+<!-- MODAL ENLACE -->
+<div class="overlay" id="ov-enlace">
+<div class="modal">
+  <div class="mh"><h3 id="enlace-mt">Nuevo expediente enlazado</h3><button class="mcl" onclick="cls('ov-enlace')">✕</button></div>
+  <div class="fg">
+    <div class="fi full"><label>Nombre del expediente / caso</label><input id="en-nombre" placeholder="Ej: Caso disciplinario enero 2025"></div>
+    <div class="fi full"><label>Descripción</label><textarea id="en-desc" placeholder="Descripción del caso o tema en común…" style="min-height:56px"></textarea></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="cls('ov-enlace')">Cancelar</button><button class="btn primary" onclick="saveEnlace()">💾 Guardar</button></div>
+</div>
+</div>
+
+<!-- MODAL PROCESO VARIOS -->
+<div class="overlay" id="ov-pv">
+<div class="modal">
+  <div class="mh"><h3 id="pv-mt">Nueva carpeta</h3><button class="mcl" onclick="cls('ov-pv')">✕</button></div>
+  <div class="fg">
+    <div class="fi full"><label>Nombre de la carpeta</label><input id="pv-nombre" placeholder="Ej: Trámites administrativos Q1"></div>
+    <div class="fi full"><label>Línea a seguir (guía del jefe)</label><textarea id="pv-guia" placeholder="Instrucciones, directrices o pasos generales a seguir para estos procesos…" style="min-height:80px"></textarea></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="cls('ov-pv')">Cancelar</button><button class="btn primary" onclick="savePV()">💾 Guardar</button></div>
+</div>
+</div>
+
+
+<!-- MODAL EXPEDIENTE PERSONAL -->
+<div class="overlay" id="ov-expediente">
+<div class="modal xl">
+  <div class="exp-header">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="exp-av" id="exp-iniciales">AA</div>
+      <div style="flex:1">
+        <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700" id="exp-nombre">Nombre</div>
+        <div style="font-size:12px;opacity:.8;margin-top:2px" id="exp-cargo">Cargo</div>
+      </div>
+      <button class="mcl" onclick="cls('ov-expediente')" style="color:white;font-size:22px">✕</button>
+    </div>
+  </div>
+  <div class="exp-stats-bar" id="exp-stats"></div>
+  <div class="exp-tabs">
+    <button class="exp-tab active" onclick="showExpTab('procesos')">📋 Procesos</button>
+    <button class="exp-tab" onclick="showExpTab('quipux')">📨 Quipux</button>
+    <button class="exp-tab" onclick="showExpTab('reasignaciones')">🔄 Reasignaciones</button>
+  </div>
+  <div class="exp-panel active" id="expp-procesos"><div id="exp-procesos"></div></div>
+  <div class="exp-panel" id="expp-quipux"><div id="exp-quipux"></div></div>
+  <div class="exp-panel" id="expp-reasignaciones">
+    <div style="margin-bottom:12px;font-size:13px;color:var(--text-muted)">Registra cuando reasignas un Quipux de esta persona a otra.</div>
+    <div class="reasig-box">
+      <div class="reasig-lbl">📤 Nueva reasignación</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
+        <div class="fi"><label>Quipux a reasignar</label><select id="reasig-qx" style="width:100%"></select></div>
+        <div class="fi"><label>Reasignar a</label><select id="reasig-a" style="width:100%"></select></div>
+        <div class="fi"><label>Fecha</label><input type="date" id="reasig-fecha" style="width:100%"></div>
+        <div class="fi"><label>Motivo (opcional)</label><input id="reasig-motivo" placeholder="Motivo de la reasignación…" style="width:100%"></div>
+      </div>
+      <button class="btn primary" onclick="guardarReasignacion()">📤 Registrar reasignación</button>
+    </div>
+    <div style="margin-top:16px" id="reasig-hist"></div>
+  </div>
+</div>
+</div>
+
+<!-- MODAL QUIPUX REASIGNAR RAPIDO -->
+<div class="overlay" id="ov-reasig-quip">
+<div class="modal">
+  <div class="mh"><h3>Reasignar Quipux</h3><button class="mcl" onclick="cls('ov-reasig-quip')">✕</button></div>
+  <div class="fg">
+    <div class="fi full"><label>Quipux</label><input id="rq-num" readonly style="background:var(--gris-50)"></div>
+    <div class="fi"><label>De (persona actual)</label><input id="rq-de" readonly style="background:var(--gris-50)"></div>
+    <div class="fi"><label>Reasignar a</label><select id="rq-a"><option value="">Seleccionar…</option></select></div>
+    <div class="fi"><label>Fecha</label><input type="date" id="rq-fecha"></div>
+    <div class="fi full"><label>Motivo</label><input id="rq-motivo" placeholder="Motivo de la reasignación…"></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="cls('ov-reasig-quip')">Cancelar</button><button class="btn primary" onclick="saveReasignacionRapida()">📤 Reasignar</button></div>
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════
+// GOOGLE SHEETS CONFIG
+// ═══════════════════════════════
+const GS_URL='https://script.google.com/macros/s/AKfycbwsqVFfhrT6Ep6ojPguKd9nEzF31ea7-LkKje_ey66RrJaZYZxbzRgyJQOMEEOugYlz/exec';
+const GS_ID='1QYJQut0GvD6pG_KS2JKlSDoz4bn_zerJIwVhubanHK8';
+
+function syncStatus(state,msg){
+  const b=document.getElementById('syncbar');
+  const m=document.getElementById('sync-msg');
+  b.className='syncbar '+(state==='ok'?'ok':state==='err'?'err':'syncing');
+  m.textContent=msg;
+}
+
+async function gsRead(sheet){
+  return new Promise((resolve)=>{
+    const cb='gs_'+Math.random().toString(36).slice(2,8);
+    const s=document.createElement('script');
+    const t=setTimeout(()=>{
+      cleanup();
+      console.warn('gsRead timeout for',sheet);
+      resolve(null);
+    },12000);
+    function cleanup(){
+      delete window[cb];
+      if(s.parentNode)s.parentNode.removeChild(s);
+      clearTimeout(t);
+    }
+    window[cb]=function(d){
+      cleanup();
+      if(!d||!d.rows||d.rows.length<2){resolve([]);return;}
+      const headers=d.rows[0];
+      const result=d.rows.slice(1).map(row=>{
+        const obj={};
+        headers.forEach((h,i)=>{
+          if(h===''||h===undefined)return;
+          const v=row[i];
+          if(v===undefined||v===''||v===null){obj[h]=typeof v==='number'?v:'';return;}
+          try{obj[h]=JSON.parse(String(v));}
+          catch(e){obj[h]=v;}
+        });
+        return obj;
+      }).filter(o=>Object.values(o).some(v=>v!==''&&v!==null&&v!==undefined));
+      resolve(result);
+    };
+    s.onerror=()=>{cleanup();resolve(null);};
+    s.src=GS_URL+'?sheet='+encodeURIComponent(sheet)+'&callback='+cb+'&t='+Date.now();
+    document.head.appendChild(s);
+  });
+}
+
+async function gsWrite(sheet,arr){
+  return new Promise((resolve)=>{
+    const payload={sheet,action:'write',rows:[]};
+    if(arr.length>0){
+      const keys=Object.keys(arr[0]);
+      payload.rows=[keys,...arr.map(o=>keys.map(k=>{const v=o[k];return v===undefined||v===null?'':JSON.stringify(v);}))];
+    } else {
+      payload.rows=[['_empty']];
+    }
+    const cb='gsw_'+Math.random().toString(36).slice(2,8);
+    const s=document.createElement('script');
+    const t=setTimeout(()=>{
+      cleanup();resolve(false);
+    },12000);
+    function cleanup(){
+      delete window[cb];
+      if(s.parentNode)s.parentNode.removeChild(s);
+      clearTimeout(t);
+    }
+    window[cb]=function(d){cleanup();resolve(true);};
+    s.onerror=()=>{cleanup();resolve(false);};
+    const encoded=encodeURIComponent(JSON.stringify(payload));
+    s.src=GS_URL+'?write=1&data='+encoded+'&callback='+cb+'&t='+Date.now();
+    document.head.appendChild(s);
+  });
+}
+
+
+// ═══════════════════════════════
+// STATE
+// ═══════════════════════════════
+let JEF='eval';
+const DEF_ETAPAS={
+  eval:[{name:'1. Elaboración del informe',days:10},{name:'2. Solicitud de autorización',days:3},
+    {name:'3. Autorización del gerente',days:5},{name:'4. Inicio del proceso',days:5},
+    {name:'5. Derecho a la defensa',days:15},{name:'6. Remisión y aprobación',days:7},
+    {name:'7. Notificación',days:5},{name:'8. Acción de personal',days:10}],
+  cap:[{name:'1. Detección de necesidades',days:10},{name:'2. Planificación del programa',days:15},
+    {name:'3. Aprobación gerencial',days:5},{name:'4. Convocatoria',days:7},
+    {name:'5. Ejecución',days:30},{name:'6. Evaluación post-capacitación',days:10},
+    {name:'7. Informe final',days:7}]
+};
+const DEF_DOCS={
+  eval:['Informe inicial','Solicitud de autorización','Autorización gerencial','Notificación al servidor','Descargos','Informe final','Resolución','Acción de personal'],
+  cap:['Plan de capacitación','Aprobación presupuestal','Lista de participantes','Material didáctico','Registro de asistencia','Evaluaciones','Certificados','Informe final']
+};
+
+let procesos=[],quipux=[],personal=[],agenda=[],etapas=[],notas=[],pendientes=[],enlaces=[],pvarios=[];
+let detIdx=-1,editPIdx=-1,editQIdx=-1,selDay=null,curNotaIdx=-1,curPendIdx=-1;
+let calY=new Date().getFullYear(),calM=new Date().getMonth();
+
+function sheetName(t){return`${JEF}_${t}`}
+
+// ═══════════════════════════════
+// LOAD / SAVE
+// ═══════════════════════════════
+async function loadAll(){
+  syncStatus('syncing','Cargando datos desde Google Sheets…');
+  const results=await Promise.all([
+    gsRead(sheetName('proc')),gsRead(sheetName('quip')),gsRead(sheetName('pers')),
+    gsRead(sheetName('agenda')),gsRead(sheetName('etapas')),gsRead(sheetName('notas')),
+    gsRead(sheetName('pendientes')),gsRead(sheetName('enlaces')),gsRead(sheetName('pvarios'))
+  ]);
+  const fallback=(r,def)=>r===null?(localStorage.getItem(sheetName(def))?JSON.parse(localStorage.getItem(sheetName(def))):null):r;
+  procesos=fallback(results[0],'proc')||[];
+  quipux=fallback(results[1],'quip')||[];
+  personal=fallback(results[2],'pers')||[];
+  agenda=fallback(results[3],'agenda')||[];
+  const etaRaw=fallback(results[4],'etapas');
+  etapas=etaRaw&&etaRaw.length?etaRaw:[...DEF_ETAPAS[JEF]];
+  notas=fallback(results[5],'notas')||[];
+  pendientes=fallback(results[6],'pendientes')||[];
+  enlaces=fallback(results[7],'enlaces')||[];
+  pvarios=fallback(results[8],'pvarios')||[];
+  syncStatus('ok',`✓ Sincronizado – ${new Date().toLocaleTimeString('es-EC')}`);
+}
+
+async function saveData(t,arr){
+  syncStatus('syncing','Guardando…');
+  // local backup
+  localStorage.setItem(sheetName(t),JSON.stringify(arr));
+  await gsWrite(sheetName(t),arr);
+  syncStatus('ok',`✓ Guardado – ${new Date().toLocaleTimeString('es-EC')}`);
+}
+
+// ═══════════════════════════════
+// JEF SWITCH
+// ═══════════════════════════════
+async function setJef(j){
+  JEF=j;
+  document.body.className=j==='cap'?'cap':'';
+  document.getElementById('hdr').className='hdr '+(j==='eval'?'eval':'cap');
+  document.getElementById('hdr-jef').textContent=j==='eval'?'Evaluación del Desempeño':'Capacitación y Formación';
+  document.getElementById('jopt-eval').className='jopt'+(j==='eval'?' ae':'');
+  document.getElementById('jopt-cap').className='jopt'+(j==='cap'?' ac':'');
+  document.getElementById('proc-ct').textContent=j==='eval'?'Registro de Procesos':'Registro de Programas';
+  document.getElementById('eta-ct').textContent=j==='eval'?'Etapas del Proceso Disciplinario':'Etapas del Programa de Capacitación';
+  await loadAll();
+  fillSelects();
+  renderAlertas();
+}
+
+// ═══════════════════════════════
+// UTILS
+// ═══════════════════════════════
+function hoy(){return new Date().toISOString().split('T')[0]}
+function daysBetween(a,b){if(!a||!b)return 0;return Math.max(0,Math.floor((new Date(b)-new Date(a))/86400000))}
+function daysSince(d){return d?daysBetween(d,hoy()):0}
+function fmtDate(d){if(!d)return'–';const[y,m,dd]=d.split('-');return`${dd}/${m}/${y}`}
+function iniciales(n){return(n||'').split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()}
+function daysFromNow(d,n){if(!d)return null;const dt=new Date(d);dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0]}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+const BCOLS=['bgr','bb','bp','bb','ba','bt','br','bp'];
+function etapaBadge(e){const i=etapas.findIndex(x=>(x.name||x)===e);const c=BCOLS[Math.max(0,i)%BCOLS.length]||'bgr';const nm=e&&e.length>24?e.slice(0,22)+'…':e||'–';return`<span class="badge ${c}" title="${e||''}">${nm}</span>`}
+function estadoBadge(e){const m={'En proceso':'bb','Archivado':'bgr','Cerrado':'bgn','Pendiente':'ba','En revisión':'bb','Respondido':'bgn','Vencido':'br'};return`<span class="badge ${m[e]||'bgr'}">${e||'–'}</span>`}
+function pbar(dias,max,done){const pct=Math.min(100,Math.round((dias/(max||60))*100));const c=done?'#006B3F':pct>=100?'#9B1C1C':pct>=75?'#C8922A':'#1E40AF';return`<div class="pw"><div class="pb"><div class="pf" style="width:${pct}%;background:${c}"></div></div><span class="pl" style="color:${c}">${dias}d</span></div>`}
+function etaName(e){return e&&e.name?e.name:e||''}
+function etaDays(e){return e&&e.days?parseInt(e.days):0}
+function flash(id,txt){const b=document.getElementById(id);if(!b)return;const o=b.textContent;b.textContent=txt;setTimeout(()=>{b.textContent=o},1800)}
+
+// ═══════════════════════════════
+// TABS
+// ═══════════════════════════════
+function showTab(id){
+  document.querySelectorAll('.tab').forEach(b=>{const m=b.getAttribute('onclick').match(/'(\w+)'/);b.classList.toggle('active',m&&m[1]===id);});
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  const map={alertas:renderAlertas,procesos:renderProc,quipux:renderQuip,personal:renderPersonal,
+    pendientes:renderPendientes,enlaces:renderEnlaces,varios:renderPV,
+    calendario:renderCal,estadisticas:renderEstad,notas:renderNotas,etapas:renderEtapas};
+  if(map[id])map[id]();
+}
+function showDtab(id){
+  document.querySelectorAll('.dtab').forEach((b,i)=>b.classList.toggle('active',['info','hist','docs','coms'][i]===id));
+  document.querySelectorAll('.dpanel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('dp-'+id).classList.add('active');
+}
+function cls(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+function fillSelects(){
+  const pOpts='<option value="">Seleccionar…</option>'+personal.map(p=>`<option>${p.nombre}</option>`).join('');
+  ['p-resp','q-asig'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=pOpts;});
+  const fq=document.getElementById('filtro-pers-q');if(fq)fq.innerHTML='<option value="">Todo el personal</option>'+personal.map(p=>`<option>${p.nombre}</option>`).join('');
+  const eOpts=etapas.map(e=>`<option>${etaName(e)}</option>`).join('');
+  ['p-etapa','ch-eta'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=eOpts;});
+  const fe=document.getElementById('filtro-etapa-proc');if(fe)fe.innerHTML='<option value="">Todas las etapas</option>'+eOpts;
+}
+
+// ═══════════════════════════════
+// ALERTAS
+// ═══════════════════════════════
+function renderAlertas(){
+  const c=document.getElementById('alertas-cont');
+  const alerts=[];
+  const hoyStr=hoy();
+  const en3=daysFromNow(hoyStr,3);
+  const qVenc=quipux.filter(q=>daysSince(q.fecha)>parseInt(q.plazo||15)&&q.estado!=='Respondido');
+  if(qVenc.length)alerts.push({type:'danger',icon:'🚨',title:`${qVenc.length} Quipux vencido${qVenc.length>1?'s':''}`,items:qVenc.map(q=>`<div class="aitem"><div class="an">${q.numero||'Sin No.'} – ${q.asunto}</div><div class="as">Asignado: ${q.asig||'–'} | ${daysSince(q.fecha)}d / ${q.plazo||15}d</div></div>`)});
+  const qPronto=quipux.filter(q=>{if(q.estado==='Respondido')return false;const v=daysFromNow(q.fecha,parseInt(q.plazo||15));return v&&v<=en3&&v>=hoyStr;});
+  if(qPronto.length)alerts.push({type:'warn',icon:'⏰',title:`${qPronto.length} Quipux vencen en 3 días`,items:qPronto.map(q=>{const d=daysBetween(hoyStr,daysFromNow(q.fecha,parseInt(q.plazo||15)));return`<div class="aitem"><div class="an">${q.numero||'Sin No.'} – ${q.asunto}</div><div class="as">Vence en ${d}d | Asignado: ${q.asig||'–'}</div></div>`})});
+  const pEst=procesos.filter(p=>{if(p.estado!=='En proceso')return false;const hist=p.historial||[];const last=hist.length?hist[hist.length-1]:null;return daysSince(last?last.fechaInicio:p.fecha)>20;});
+  if(pEst.length)alerts.push({type:'warn',icon:'🔒',title:`${pEst.length} proceso${pEst.length>1?'s':''} sin movimiento >20 días`,items:pEst.map(p=>{const hist=p.historial||[];const last=hist.length?hist[hist.length-1]:null;const d=daysSince(last?last.fechaInicio:p.fecha);return`<div class="aitem"><div class="an">${p.exp||'Sin ref.'} – ${p.servidor}</div><div class="as">Etapa: ${p.etapa} | ${d}d sin cambio</div></div>`})});
+  const pOvr=procesos.filter(p=>{if(p.estado!=='En proceso')return false;const eta=etapas.find(e=>etaName(e)===p.etapa);if(!eta||!etaDays(eta))return false;const hist=p.historial||[];const last=hist.length?hist[hist.length-1]:null;return daysSince(last?last.fechaInicio:p.fecha)>etaDays(eta);});
+  if(pOvr.length)alerts.push({type:'danger',icon:'⚠️',title:`${pOvr.length} proceso${pOvr.length>1?'s':''} superaron plazo de etapa`,items:pOvr.map(p=>{const eta=etapas.find(e=>etaName(e)===p.etapa);const hist=p.historial||[];const last=hist.length?hist[hist.length-1]:null;const d=daysSince(last?last.fechaInicio:p.fecha);return`<div class="aitem"><div class="an">${p.exp||'–'} – ${p.servidor}</div><div class="as">${p.etapa} | ${d}d / ${etaDays(eta)}d máx.</div></div>`})});
+  const agH=agenda.filter(a=>a.fechaInicio===hoyStr||(a.fechaInicio<=hoyStr&&a.fechaFin&&a.fechaFin>=hoyStr));
+  if(agH.length)alerts.push({type:'info',icon:'📅',title:`${agH.length} evento${agH.length>1?'s':''} hoy`,items:agH.map(a=>`<div class="aitem"><div class="an">${a.titulo}</div><div class="as">${a.horaInicio||'Todo el día'}${a.horaFin?' – '+a.horaFin:''}</div></div>`)});
+  if(!alerts.length){c.innerHTML=`<div class="empty"><div class="ei">✅</div><p>Todo en orden. Sin alertas urgentes.</p></div>`;return;}
+  c.innerHTML=alerts.map(a=>`<div class="alert-banner ${a.type}"><div class="alert-icon">${a.icon}</div><div class="alert-body" style="flex:1"><div class="at">${a.title}</div><div class="alert-items">${a.items.join('')}</div></div></div>`).join('');
+  const t=document.getElementById('tab-alertas');if(t)t.innerHTML=`🚨 Alertas <span class="bdot"></span>`;
+}
+
+// ═══════════════════════════════
+// PROCESOS
+// ═══════════════════════════════
+function renderProc(){
+  const b=(document.getElementById('buscar-proc').value||'').toLowerCase();
+  const fe=document.getElementById('filtro-etapa-proc').value;
+  const fs=document.getElementById('filtro-estado-proc').value;
+  const data=procesos.filter(p=>{const t=((p.exp||'')+p.servidor+(p.cargo||'')+(p.responsable||'')).toLowerCase();return(!b||t.includes(b))&&(!fe||p.etapa===fe)&&(!fs||p.estado===fs);});
+  const total=procesos.length,enP=procesos.filter(p=>p.estado==='En proceso').length,cerr=procesos.filter(p=>p.estado==='Cerrado').length,arch=procesos.filter(p=>p.estado==='Archivado').length;
+  document.getElementById('stats-proc').innerHTML=`<div class="sc sb"><div class="sic sib">📋</div><div class="snum snb">${total}</div><div class="slbl">Total</div></div><div class="sc sa"><div class="sic sia">⏳</div><div class="snum sna">${enP}</div><div class="slbl">En proceso</div></div><div class="sc sg"><div class="sic sig">✅</div><div class="snum sng">${cerr}</div><div class="slbl">Cerrados</div></div><div class="sc sr"><div class="sic sir">📁</div><div class="snum snr">${arch}</div><div class="slbl">Archivados</div></div>`;
+  const tb=document.getElementById('tbody-proc');
+  document.getElementById('empty-proc').style.display=data.length?'none':'block';
+  tb.innerHTML=data.map(p=>{
+    const idx=procesos.indexOf(p);const diasT=daysSince(p.fecha);
+    const hist=p.historial||[];const last=hist.length?hist[hist.length-1]:null;
+    const diasE=last?daysSince(last.fechaInicio):diasT;
+    const eta=etapas.find(e=>etaName(e)===p.etapa);const done=p.estado!=='En proceso';
+    const etaOvr=eta&&etaDays(eta)&&diasE>etaDays(eta);
+    const docs=p.docs||[];const docPend=docs.filter(d=>!d.done).length;
+    const hasComs=(p.comentarios||[]).length;
+    return`<tr><td><span class="fw5">${p.exp||'–'}</span></td>
+      <td><div class="sn">${p.servidor}</div><div class="sro">${p.cargo||''}</div></td>
+      <td>${etapaBadge(p.etapa)}${etaOvr?`<span class="badge br" style="margin-left:3px;font-size:9px">+${diasE-etaDays(eta)}d</span>`:''}</td>
+      <td class="tm">${p.responsable||'–'}</td>
+      <td>${pbar(diasE,etaDays(eta)||30,done)}</td>
+      <td>${pbar(diasT,90,done)}</td>
+      <td>${estadoBadge(p.estado)}</td>
+      <td style="white-space:nowrap;display:flex;gap:4px;padding-top:12px">
+        <button class="btn sm primary" onclick="openDet(${idx})">🔍${hasComs?` (${hasComs})`:''}</button>
+        ${docPend>0?`<span class="badge br" style="font-size:9px">${docPend}</span>`:''}
+        <button class="btn sm danger" onclick="delProc(${idx})">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function openProcNew(){
+  editPIdx=-1;
+  document.getElementById('proc-mt').textContent=JEF==='eval'?'Nuevo proceso disciplinario':'Nuevo programa / actividad';
+  ['p-exp','p-servidor','p-cargo','p-obs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('p-fecha').value=hoy();document.getElementById('p-estado').value='En proceso';
+  fillSelects();if(etapas.length)document.getElementById('p-etapa').value=etaName(etapas[0]);
+  document.getElementById('ov-proc').classList.add('open');
+}
+async function saveProc(){
+  const servidor=document.getElementById('p-servidor').value.trim();if(!servidor){alert('El nombre es obligatorio');return;}
+  const etapa=document.getElementById('p-etapa').value;const fecha=document.getElementById('p-fecha').value;
+  const defDocs=(DEF_DOCS[JEF]||[]).map(d=>({name:d,done:false,fecha:null}));
+  const existing=editPIdx>=0?procesos[editPIdx]:null;
+  const obj={id:existing?existing.id:uid(),exp:document.getElementById('p-exp').value.trim(),servidor,
+    cargo:document.getElementById('p-cargo').value.trim(),fecha,etapa,
+    estado:document.getElementById('p-estado').value,responsable:document.getElementById('p-resp').value,
+    obs:document.getElementById('p-obs').value.trim(),
+    historial:existing?existing.historial:[{etapa,fechaInicio:fecha}],
+    comentarios:existing?existing.comentarios:[],
+    docs:existing?existing.docs:defDocs};
+  if(editPIdx>=0)procesos[editPIdx]=obj; else procesos.push(obj);
+  await saveData('proc',procesos);cls('ov-proc');renderProc();renderAlertas();
+}
+async function delProc(idx){if(confirm('¿Eliminar?')){procesos.splice(idx,1);await saveData('proc',procesos);renderProc();renderAlertas();}}
+
+// ═══════════════════════════════
+// DETALLE + EDITAR
+// ═══════════════════════════════
+function openDet(idx){
+  detIdx=idx;const p=procesos[idx];
+  document.getElementById('det-t').textContent=p.exp?`Ref. ${p.exp}`:'Sin referencia';
+  document.getElementById('det-s').textContent=`${p.servidor}${p.cargo?' – '+p.cargo:''}`;
+  document.getElementById('det-ig').innerHTML=`
+    <div class="ii"><label>Referencia</label><span>${p.exp||'–'}</span></div>
+    <div class="ii"><label>Fecha inicio</label><span>${fmtDate(p.fecha)}</span></div>
+    <div class="ii"><label>Servidor</label><span>${p.servidor}</span></div>
+    <div class="ii"><label>Cargo</label><span>${p.cargo||'–'}</span></div>
+    <div class="ii"><label>Responsable</label><span>${p.responsable||'–'}</span></div>
+    <div class="ii"><label>Días totales</label><span>${daysSince(p.fecha)}d</span></div>`;
+  document.getElementById('ch-eta').value=p.etapa;
+  document.getElementById('ch-est').value=p.estado;
+  document.getElementById('ch-fd').value=hoy();
+  renderTL(idx);renderDocs(idx);renderComs(idx);
+  showDtab('info');
+  document.getElementById('ov-det').classList.add('open');
+}
+function editProc(){
+  if(detIdx<0)return;
+  const p=procesos[detIdx];
+  editPIdx=detIdx;
+  document.getElementById('proc-mt').textContent='Editar proceso';
+  document.getElementById('p-exp').value=p.exp||'';
+  document.getElementById('p-servidor').value=p.servidor||'';
+  document.getElementById('p-cargo').value=p.cargo||'';
+  document.getElementById('p-fecha').value=p.fecha||'';
+  document.getElementById('p-obs').value=p.obs||'';
+  fillSelects();
+  document.getElementById('p-etapa').value=p.etapa||'';
+  document.getElementById('p-estado').value=p.estado||'En proceso';
+  document.getElementById('p-resp').value=p.responsable||'';
+  cls('ov-det');
+  document.getElementById('ov-proc').classList.add('open');
+}
+function renderTL(idx){
+  const p=procesos[idx];const hist=p.historial||[];const wrap=document.getElementById('tl-wrap');
+  if(!hist.length){wrap.innerHTML='<p style="color:var(--text-muted);font-size:13px;padding:12px 0">Registra el primer cambio de etapa.</p>';return;}
+  wrap.innerHTML='<div class="tl">'+hist.map((h,i)=>{
+    const isLast=i===hist.length-1;const dur=h.fechaFin?daysBetween(h.fechaInicio,h.fechaFin):daysSince(h.fechaInicio);
+    const dc=h.fechaFin?'done':isLast?'cur':'pend';const eta=etapas.find(e=>etaName(e)===h.etapa);
+    const maxD=eta?etaDays(eta):0;const isOvr=maxD&&dur>maxD;
+    const durCls=isOvr?'over':maxD&&dur>maxD*.75?'warn':'ok';
+    return`<div class="tli"><div class="tld ${dc}"></div><div class="tlc">
+      <div class="tle">${h.etapa}${isOvr?`<span class="tlovr">+${dur-maxD}d</span>`:''}</div>
+      <div class="tlm"><span>📅 ${fmtDate(h.fechaInicio)}</span>${h.fechaFin?`<span>→ ${fmtDate(h.fechaFin)}</span>`:`<span style="color:var(--oro);font-weight:500">▶ En curso</span>`}</div>
+      <div class="tldur ${durCls}">⏱ ${dur}d${maxD?` / ${maxD}d máx.`:''}</div>
+    </div></div>`;
+  }).join('')+'</div>';
+}
+async function applyEtapa(){
+  if(detIdx<0)return;const p=procesos[detIdx];
+  const ne=document.getElementById('ch-eta').value;const fd=document.getElementById('ch-fd').value||hoy();
+  if(!p.historial)p.historial=[];const last=p.historial[p.historial.length-1];
+  if(last&&!last.fechaFin){if(last.etapa===ne){alert('Ya está en esa etapa.');return;}last.fechaFin=fd;}
+  p.historial.push({etapa:ne,fechaInicio:fd});p.etapa=ne;
+  await saveData('proc',procesos);renderTL(detIdx);renderProc();renderAlertas();flash('btn-eta','✅ Registrado');
+}
+async function applyEst(){
+  if(detIdx<0)return;procesos[detIdx].estado=document.getElementById('ch-est').value;
+  await saveData('proc',procesos);renderProc();renderAlertas();flash('btn-est','✅ Guardado');
+}
+function renderDocs(idx){
+  const p=procesos[idx];const docs=p.docs||[];const done=docs.filter(d=>d.done).length;
+  document.getElementById('doclist-wrap').innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <span style="font-size:12px;color:var(--text-muted)">${done}/${docs.length} completados</span>
+    <div class="pb" style="width:100px;height:5px"><div class="pf" style="width:${docs.length?Math.round(done/docs.length*100):0}%;background:var(--verde)"></div></div>
+  </div><div class="doclist">`+docs.map((d,i)=>`<div class="docitem ${d.done?'done':''}">
+    <input type="checkbox" ${d.done?'checked':''} onchange="toggleDoc(${idx},${i},this.checked)">
+    <label>${d.name}</label>${d.done&&d.fecha?`<span style="font-size:10px;color:var(--text-muted)">${fmtDate(d.fecha)}</span>`:''}
+    <button class="btn sm danger" onclick="delDoc(${idx},${i})" style="padding:2px 5px;font-size:10px">✕</button>
+  </div>`).join('')+'</div>';
+}
+async function toggleDoc(pidx,didx,val){
+  procesos[pidx].docs[didx].done=val;procesos[pidx].docs[didx].fecha=val?hoy():null;
+  await saveData('proc',procesos);renderDocs(pidx);renderProc();
+}
+async function addDoc(){
+  if(detIdx<0)return;const inp=document.getElementById('new-doc');const v=inp.value.trim();if(!v)return;
+  if(!procesos[detIdx].docs)procesos[detIdx].docs=[];
+  procesos[detIdx].docs.push({name:v,done:false,fecha:null});
+  inp.value='';await saveData('proc',procesos);renderDocs(detIdx);renderProc();
+}
+async function delDoc(pidx,didx){if(confirm('¿Eliminar?')){procesos[pidx].docs.splice(didx,1);await saveData('proc',procesos);renderDocs(pidx);}}
+function renderComs(idx){
+  const coms=(procesos[idx].comentarios||[]);const list=document.getElementById('coms-list');
+  if(!coms.length){list.innerHTML='<div style="color:var(--text-muted);font-size:13px;padding:10px 0 16px">Sin comentarios aún.</div>';return;}
+  list.innerHTML=coms.map((c,i)=>`<div class="comi"><div class="comm">📅 ${fmtDate(c.fecha)}${c.hora?' – '+c.hora:''}</div><div class="comt">${c.texto}</div><button class="comd" onclick="delCom(${idx},${i})">✕</button></div>`).join('');
+}
+async function addCom(){
+  if(detIdx<0)return;const inp=document.getElementById('nuevo-com');const txt=inp.value.trim();if(!txt)return;
+  const p=procesos[detIdx];if(!p.comentarios)p.comentarios=[];
+  const now=new Date();p.comentarios.push({texto:txt,fecha:hoy(),hora:now.toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'})});
+  inp.value='';await saveData('proc',procesos);renderComs(detIdx);renderProc();
+}
+async function delCom(pi,ci){if(confirm('¿Eliminar?')){procesos[pi].comentarios.splice(ci,1);await saveData('proc',procesos);renderComs(pi);}}
+
+// ═══════════════════════════════
+// QUIPUX
+// ═══════════════════════════════
+document.getElementById('q-est').addEventListener('change',function(){
+  document.getElementById('resp-section').style.display=this.value==='Respondido'?'block':'none';
+});
+function renderQuip(){
+  const b=(document.getElementById('buscar-quip').value||'').toLowerCase();
+  const fp=document.getElementById('filtro-pers-q').value;const fs=document.getElementById('filtro-estado-q').value;
+  const data=quipux.filter(q=>{
+    const t=((q.numero||'')+q.asunto+(q.asig||'')).toLowerCase();
+    const venc=daysSince(q.fecha)>parseInt(q.plazo||15)&&q.estado!=='Respondido';
+    const ef=venc?'Vencido':q.estado;
+    return(!b||t.includes(b))&&(!fp||q.asig===fp)&&(!fs||ef===fs);
+  });
+  const total=quipux.length,pend=quipux.filter(q=>q.estado==='Pendiente'||q.estado==='En revisión').length;
+  const resp=quipux.filter(q=>q.estado==='Respondido').length;
+  const venc=quipux.filter(q=>daysSince(q.fecha)>parseInt(q.plazo||15)&&q.estado!=='Respondido').length;
+  document.getElementById('stats-quip').innerHTML=`<div class="sc sb"><div class="sic sib">📨</div><div class="snum snb">${total}</div><div class="slbl">Total</div></div><div class="sc sa"><div class="sic sia">🕐</div><div class="snum sna">${pend}</div><div class="slbl">Pendientes</div></div><div class="sc sg"><div class="sic sig">✅</div><div class="snum sng">${resp}</div><div class="slbl">Respondidos</div></div><div class="sc sr"><div class="sic sir">🚨</div><div class="snum snr">${venc}</div><div class="slbl">Vencidos</div></div>`;
+  const tb=document.getElementById('tbody-quip');
+  document.getElementById('empty-quip').style.display=data.length?'none':'block';
+  tb.innerHTML=data.map(q=>{
+    const idx=quipux.indexOf(q);const dias=daysSince(q.fecha);const plazo=parseInt(q.plazo)||15;
+    const ef=(dias>plazo&&q.estado!=='Respondido')?'Vencido':q.estado;
+    const diasResp=q.respFecha?daysBetween(q.fecha,q.respFecha):null;
+    let respCell='<span class="tm" style="font-size:11px">–</span>';
+    if(q.estado==='Respondido'&&q.respFecha){
+      respCell=`<div style="font-size:11px"><div>📅 ${fmtDate(q.respFecha)}</div>${q.respNum?`<div class="tm">QX: ${q.respNum}</div>`:''}${diasResp!==null?`<div><span class="badge ${diasResp>plazo?'br':'bgn'}" style="font-size:10px">⏱ ${diasResp}d</span></div>`:''}</div>`;
+    }
+    return`<tr><td><span class="fw5">${q.numero||'–'}</span></td>
+      <td><div style="font-weight:500">${q.asunto}</div>${q.descripcion?`<div class="sro" style="font-style:italic">${q.descripcion.slice(0,50)}${q.descripcion.length>50?'…':''}</div>`:''}</td>
+      <td class="fw5">${q.asig||'–'}</td><td class="tm">${fmtDate(q.fecha)}</td>
+      <td style="text-align:center"><span class="badge bgr">${plazo}d</span></td>
+      <td>${pbar(dias,plazo,q.estado==='Respondido')}</td>
+      <td>${respCell}</td>
+      <td>${estadoBadge(ef)}</td>
+      <td style="white-space:nowrap">
+        <button class="btn sm" onclick="editQuip(${idx})" style="margin-right:3px">✏️</button>
+        <button class="btn sm danger" onclick="delQuip(${idx})">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function openQuipNew(){
+  editQIdx=-1;
+  document.getElementById('quip-mt').textContent='Nuevo Quipux reasignado';
+  ['q-num','q-asunto','q-obs','q-resp-fecha','q-resp-num','q-resp-como'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('q-fecha').value=hoy();document.getElementById('q-plazo').value='15';
+  document.getElementById('q-est').value='Pendiente';document.getElementById('resp-section').style.display='none';
+  fillSelects();document.getElementById('ov-quip').classList.add('open');
+}
+function editQuip(idx){
+  editQIdx=idx;const q=quipux[idx];
+  document.getElementById('quip-mt').textContent='Editar Quipux';
+  document.getElementById('q-num').value=q.numero||'';document.getElementById('q-asunto').value=q.asunto||'';
+  document.getElementById('q-fecha').value=q.fecha||'';document.getElementById('q-plazo').value=q.plazo||'15';
+  document.getElementById('q-obs').value=q.obs||'';
+  document.getElementById('q-desc').value=q.descripcion||'';fillSelects();
+  document.getElementById('q-asig').value=q.asig||'';document.getElementById('q-est').value=q.estado||'Pendiente';
+  document.getElementById('resp-section').style.display=q.estado==='Respondido'?'block':'none';
+  document.getElementById('q-resp-fecha').value=q.respFecha||'';
+  document.getElementById('q-resp-num').value=q.respNum||'';
+  document.getElementById('q-resp-como').value=q.respComo||'';
+  document.getElementById('ov-quip').classList.add('open');
+}
+async function saveQuip(){
+  const asunto=document.getElementById('q-asunto').value.trim();if(!asunto){alert('El asunto es obligatorio');return;}
+  const estado=document.getElementById('q-est').value;
+  const obj={id:editQIdx>=0?(quipux[editQIdx].id||uid()):uid(),
+    numero:document.getElementById('q-num').value.trim(),asunto,
+    fecha:document.getElementById('q-fecha').value,plazo:document.getElementById('q-plazo').value,
+    asig:document.getElementById('q-asig').value,estado,obs:document.getElementById('q-obs').value.trim(),
+    respFecha:estado==='Respondido'?document.getElementById('q-resp-fecha').value:'',
+    respNum:estado==='Respondido'?document.getElementById('q-resp-num').value.trim():'',
+    respComo:estado==='Respondido'?document.getElementById('q-resp-como').value.trim():''};
+  if(editQIdx>=0)quipux[editQIdx]=obj; else quipux.push(obj);
+  await saveData('quip',quipux);cls('ov-quip');renderQuip();renderAlertas();
+}
+async function delQuip(idx){if(confirm('¿Eliminar?')){quipux.splice(idx,1);await saveData('quip',quipux);renderQuip();renderAlertas();}}
+
+// ═══════════════════════════════
+// PERSONAL
+// ═══════════════════════════════
+
+function renderPersonal(){
+  const cards=document.getElementById('cards-personal');
+  document.getElementById('empty-pers').style.display=personal.length?'none':'block';
+  cards.style.display=personal.length?'grid':'none';
+  cards.innerHTML=personal.map((p,i)=>{
+    const qActual=quipux.filter(q=>q.asig===p.nombre);
+    const qV=qActual.filter(q=>daysSince(q.fecha)>parseInt(q.plazo||15)&&q.estado!=='Respondido').length;
+    const prA=procesos.filter(pr=>pr.responsable===p.nombre&&pr.estado==='En proceso').length;
+    const prTotal=procesos.filter(pr=>pr.responsable===p.nombre).length;
+    const respTimes=qActual.filter(q=>q.estado==='Respondido'&&q.respFecha&&q.fecha).map(q=>daysBetween(q.fecha,q.respFecha));
+    const avg=respTimes.length?Math.round(respTimes.reduce((a,b)=>a+b,0)/respTimes.length):0;
+    const statusColor=qV>0?'var(--rojo)':prA>0?'var(--oro)':'var(--verde)';
+    const statusTxt=qV>0?`⚠ ${qV} vencido${qV>1?'s':''}`:prA>0?`${prA} proceso${prA>1?'s':''} activo${prA>1?'s':''}`:' Al día';
+    return`<div class="pcard" style="cursor:pointer" onclick="openExpediente(${i})">
+      <div class="ph">
+        <div class="av" style="width:48px;height:48px;font-size:16px">${iniciales(p.nombre)}</div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14px">${p.nombre}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${p.cargo||'Sin cargo'}</div>
+          ${p.email?`<div style="font-size:10px;color:var(--text-muted)">✉ ${p.email}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <button class="btn sm danger" onclick="event.stopPropagation();delPers(${i})" style="padding:3px 7px">🗑</button>
+          <span style="font-size:9px;background:${statusColor};color:white;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap">${statusTxt}</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px">
+        <div class="pst"><div class="n" style="color:var(--jef);font-size:20px">${prA}</div><div class="l">Activos</div></div>
+        <div class="pst"><div class="n" style="font-size:20px;color:var(--text-muted)">${prTotal}</div><div class="l">Hist. proc.</div></div>
+        <div class="pst"><div class="n" style="color:${qV>0?'var(--rojo)':'var(--verde)'};font-size:20px">${qActual.filter(q=>q.estado!=='Respondido').length}</div><div class="l">QX pend.</div></div>
+        <div class="pst"><div class="n" style="color:var(--text-muted);font-size:20px">${avg>0?avg+'d':'–'}</div><div class="l">Avg resp.</div></div>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;gap:6px">
+        ${p.email?`<button class="btn sm success" style="flex:1;justify-content:center" onclick="event.stopPropagation();enviarResumen(${i})">✉ Resumen</button>`:''}
+        <button class="btn sm primary" style="flex:1;justify-content:center" onclick="event.stopPropagation();openExpediente(${i})">📋 Expediente</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showExpTab(id){
+  document.querySelectorAll('.exp-tab').forEach((b,i)=>b.classList.toggle('active',['procesos','quipux','reasignaciones'][i]===id));
+  document.querySelectorAll('.exp-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('expp-'+id).classList.add('active');
+}
+
+let expIdx=-1;
+function openExpediente(idx){
+  expIdx=idx;
+  const p=personal[idx];
+  const procPers=procesos.filter(pr=>pr.responsable===p.nombre);
+  const quipActual=quipux.filter(q=>q.asig===p.nombre);
+  const quipReasig=quipux.filter(q=>(q.reasignaciones||[]).some(r=>r.de===p.nombre||r.a===p.nombre));
+  const quipPers=[...new Map([...quipActual,...quipReasig].map(q=>[q.id||q.numero,q])).values()];
+  const prActivos=procPers.filter(pr=>pr.estado==='En proceso').length;
+  const prCerrados=procPers.filter(pr=>pr.estado!=='En proceso').length;
+  const qPend=quipActual.filter(q=>q.estado!=='Respondido').length;
+  const qVenc=quipActual.filter(q=>daysSince(q.fecha)>parseInt(q.plazo||15)&&q.estado!=='Respondido').length;
+  const qResp=quipActual.filter(q=>q.estado==='Respondido').length;
+  const respTimes=quipActual.filter(q=>q.estado==='Respondido'&&q.respFecha).map(q=>daysBetween(q.fecha,q.respFecha));
+  const avgResp=respTimes.length?Math.round(respTimes.reduce((a,b)=>a+b,0)/respTimes.length):0;
+  document.getElementById('exp-iniciales').textContent=iniciales(p.nombre);
+  document.getElementById('exp-nombre').textContent=p.nombre;
+  document.getElementById('exp-cargo').textContent=`${p.cargo||'Sin cargo'}${p.email?' · '+p.email:''}`;
+  document.getElementById('exp-stats').innerHTML=`
+    <div class="pst"><div class="n" style="color:var(--jef);font-size:20px">${prActivos}</div><div class="l">Proc. activos</div></div>
+    <div class="pst"><div class="n" style="font-size:20px;color:var(--text-muted)">${prCerrados}</div><div class="l">Proc. cerrados</div></div>
+    <div class="pst"><div class="n" style="color:${qVenc>0?'var(--rojo)':'var(--oro)'};font-size:20px">${qPend}</div><div class="l">QX pendientes</div></div>
+    <div class="pst"><div class="n" style="color:var(--rojo);font-size:20px">${qVenc}</div><div class="l">QX vencidos</div></div>
+    <div class="pst"><div class="n" style="color:var(--verde);font-size:20px">${qResp}</div><div class="l">QX respondidos</div></div>
+    <div class="pst"><div class="n" style="color:var(--text-muted);font-size:20px">${avgResp>0?avgResp+'d':'–'}</div><div class="l">Avg respuesta</div></div>`;
+  // Procesos
+  document.getElementById('exp-procesos').innerHTML=procPers.length?procPers.map(pr=>{
+    const hist=pr.historial||[];const last=hist.length?hist[hist.length-1]:null;
+    const diasE=last?daysSince(last.fechaInicio):daysSince(pr.fecha);
+    const diasT=daysSince(pr.fecha);const eta=etapas.find(e=>etaName(e)===pr.etapa);
+    const etaOvr=eta&&etaDays(eta)&&diasE>etaDays(eta);const done=pr.estado!=='En proceso';
+    const sc=pr.estado==='En proceso'?'bb':pr.estado==='Cerrado'?'bgn':'bgr';
+    return`<div style="background:var(--gris-50);border-radius:var(--rs);padding:12px 14px;border:1px solid var(--border);margin-bottom:8px">
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div style="flex:1"><div style="font-weight:600;font-size:13px">${pr.exp||'Sin ref.'} – ${pr.servidor}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${pr.cargo||''} · Inicio: ${fmtDate(pr.fecha)}</div></div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">${etapaBadge(pr.etapa)}<span class="badge ${sc}">${pr.estado}</span>${etaOvr?`<span class="badge br" style="font-size:9px">+${diasE-etaDays(eta)}d</span>`:''}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+        <div><div style="font-size:10px;color:var(--text-muted);margin-bottom:3px">Días en etapa</div>${pbar(diasE,etaDays(eta)||30,done)}</div>
+        <div><div style="font-size:10px;color:var(--text-muted);margin-bottom:3px">Días totales</div>${pbar(diasT,90,done)}</div>
+      </div>
+    </div>`;
+  }).join(''):`<div class="empty"><div class="ei">📂</div><p>Sin procesos asignados.</p></div>`;
+  // Quipux
+  document.getElementById('exp-quipux').innerHTML=quipPers.length?quipPers.map(q=>{
+    const dias=daysSince(q.fecha);const plazo=parseInt(q.plazo||15);
+    const ef=(dias>plazo&&q.estado!=='Respondido')?'Vencido':q.estado;
+    const sc=ef==='Respondido'?'bgn':ef==='Vencido'?'br':ef==='En revisión'?'bb':'ba';
+    const esActual=q.asig===p.nombre;
+    const diasResp=q.respFecha?daysBetween(q.fecha,q.respFecha):null;
+    const reasigs=q.reasignaciones||[];
+    return`<div style="background:var(--gris-50);border-radius:var(--rs);padding:12px 14px;border:1px solid var(--border);margin-bottom:8px;${!esActual?'border-left:3px solid var(--oro)':''}">
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:13px">${q.numero||'Sin No.'} ${!esActual?'<span style="font-size:10px;background:var(--oro-light);color:#92400E;padding:1px 6px;border-radius:8px">Reasignado</span>':''}</div>
+          <div style="font-size:12px;margin-top:2px">${q.asunto}</div>
+          ${q.descripcion?`<div style="font-size:11px;color:var(--text-muted);font-style:italic;margin-top:2px">${q.descripcion}</div>`:''}
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">📅 ${fmtDate(q.fecha)} · Plazo: ${plazo}d</div>
+        </div>
+        <span class="badge ${sc}">${ef}</span>
+      </div>
+      <div style="margin-top:8px">${pbar(dias,plazo,q.estado==='Respondido')}</div>
+      ${q.estado==='Respondido'&&q.respFecha?`<div style="margin-top:8px;background:var(--verde-light);border-radius:6px;padding:7px 10px;font-size:11px">
+        <span style="color:var(--verde);font-weight:600">✅ Respondido ${fmtDate(q.respFecha)}</span>${q.respNum?' · QX: '+q.respNum:''}${diasResp!==null?' · <b>'+diasResp+'d</b>':''}
+        ${q.respComo?`<div style="margin-top:3px;color:var(--text-muted)">${q.respComo}</div>`:''}
+      </div>`:''}
+      ${reasigs.length?`<div style="margin-top:8px;border-top:1px dashed var(--border);padding-top:7px">
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Historial reasignaciones</div>
+        ${reasigs.map(r=>`<div style="font-size:11px;color:var(--text-muted);padding:2px 0">📤 ${fmtDate(r.fecha)}: <b>${r.de}</b> → <b>${r.a}</b>${r.motivo?' · '+r.motivo:''}</div>`).join('')}
+      </div>`:''}
+    </div>`;
+  }).join(''):`<div class="empty"><div class="ei">📨</div><p>Sin Quipux relacionados.</p></div>`;
+  // Reasignaciones tab - populate selects
+  const qxOpts=quipActual.map(q=>`<option value="${q.id||q.numero}">${q.numero||'Sin No.'} – ${q.asunto.slice(0,30)}</option>`).join('');
+  document.getElementById('reasig-qx').innerHTML=qxOpts||'<option>Sin Quipux activos</option>';
+  const persOpts=personal.filter((_,i2)=>i2!==idx).map(p2=>`<option>${p2.nombre}</option>`).join('');
+  document.getElementById('reasig-a').innerHTML='<option value="">Seleccionar…</option>'+persOpts;
+  document.getElementById('reasig-fecha').value=hoy();
+  document.getElementById('reasig-motivo').value='';
+  renderReasigHist(idx);
+  showExpTab('procesos');
+  document.getElementById('ov-expediente').classList.add('open');
+}
+
+function renderReasigHist(idx){
+  const p=personal[idx];
+  const hist=[];
+  quipux.forEach(q=>{(q.reasignaciones||[]).forEach(r=>{if(r.de===p.nombre||r.a===p.nombre)hist.push({...r,qnum:q.numero||'Sin No.',qasunto:q.asunto});});});
+  hist.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const wrap=document.getElementById('reasig-hist');
+  if(!hist.length){wrap.innerHTML='<div style="color:var(--text-muted);font-size:13px;padding:10px 0">Sin historial de reasignaciones.</div>';return;}
+  wrap.innerHTML=`<div style="font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Historial</div>`+
+  hist.map(r=>`<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 12px;background:var(--gris-50);border-radius:var(--rs);margin-bottom:6px;border-left:3px solid ${r.a===p.nombre?'var(--verde)':'var(--oro)'}">
+    <div style="font-size:18px">${r.a===p.nombre?'📥':'📤'}</div>
+    <div style="flex:1"><div style="font-size:13px;font-weight:500">${r.qnum} – ${r.qasunto?r.qasunto.slice(0,35):''}</div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${fmtDate(r.fecha)} · De <b>${r.de}</b> → <b>${r.a}</b>${r.motivo?' · '+r.motivo:''}</div></div>
+  </div>`).join('');
+}
+
+async function guardarReasignacion(){
+  if(expIdx<0)return;
+  const p=personal[expIdx];
+  const qxSel=document.getElementById('reasig-qx').value;
+  const a=document.getElementById('reasig-a').value;
+  const fecha=document.getElementById('reasig-fecha').value;
+  const motivo=document.getElementById('reasig-motivo').value.trim();
+  if(!qxSel||!a){alert('Selecciona el Quipux y la persona.');return;}
+  const qIdx=quipux.findIndex(q=>(q.id||q.numero)===qxSel||q.numero===qxSel);
+  if(qIdx<0)return;
+  if(!quipux[qIdx].reasignaciones)quipux[qIdx].reasignaciones=[];
+  quipux[qIdx].reasignaciones.push({de:p.nombre,a,fecha,motivo});
+  quipux[qIdx].asig=a;
+  await saveData('quip',quipux);
+  renderReasigHist(expIdx);
+  document.getElementById('reasig-motivo').value='';
+  alert(`Quipux reasignado a ${a} correctamente.`);
+  renderQuip();
+}
+
+function buildResumen(p){
+  const qA=quipux.filter(q=>q.asig===p.nombre);const qP=qA.filter(q=>q.estado!=='Respondido');
+  const qV=qA.filter(q=>daysSince(q.fecha)>parseInt(q.plazo||15)&&q.estado!=='Respondido');
+  const prA=procesos.filter(pr=>pr.responsable===p.nombre&&pr.estado==='En proceso');
+  const jef=JEF==='eval'?'Jefatura de Evaluación del Desempeño':'Jefatura de Capacitación y Formación';
+  const fecha=new Date().toLocaleDateString('es-EC',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  let body=`Estimado/a ${p.nombre},%0A%0ALe informamos su estado de trámites a la fecha (${fecha}):%0A%0A`;
+  if(prA.length){body+=`PROCESOS A SU CARGO (${prA.length}):%0A`;prA.forEach(pr=>{body+=`  • ${pr.exp||'Sin ref.'} – ${pr.servidor} | Etapa: ${pr.etapa} | ${daysSince(pr.fecha)}d%0A`;});body+='%0A';}
+  if(qP.length){body+=`QUIPUX PENDIENTES (${qP.length}):%0A`;qP.forEach(q=>{const d=daysSince(q.fecha);const pl=parseInt(q.plazo||15);body+=`  • ${q.numero||'Sin No.'} – ${q.asunto} | ${d}/${pl}d${d>pl?' ⚠ VENCIDO':''}%0A`;});body+='%0A';}
+  if(!prA.length&&!qP.length)body+=`Sin trámites pendientes. ¡Gracias por su gestión!%0A%0A`;
+  else if(qV.length)body+=`⚠ ATENCIÓN: ${qV.length} Quipux vencido${qV.length>1?'s':''}. Se requiere atención inmediata.%0A%0A`;
+  else body+=`Por favor gestionar a la brevedad posible.%0A%0A`;
+  body+=`Atentamente,%0A${jef}%0AHospital General Teodoro Maldonado Carbo – IESS`;
+  return body;
+}
+function enviarResumen(i){const p=personal[i];if(!p.email){alert('Sin correo.');return;}const jef=JEF==='eval'?'Evaluación del Desempeño':'Capacitación y Formación';window.location.href=`mailto:${p.email}?subject=${encodeURIComponent(`Resumen trámites – Jefatura de ${jef}`)}&body=${buildResumen(p)}`;}
+function enviarTodos(){const cc=personal.filter(p=>p.email);if(!cc.length){alert('Ninguno tiene correo.');return;}if(!confirm(`¿Enviar a ${cc.length} persona${cc.length>1?'s':''}?`))return;cc.forEach((p,i)=>{setTimeout(()=>{const jef=JEF==='eval'?'Evaluación del Desempeño':'Capacitación y Formación';window.open(`mailto:${p.email}?subject=${encodeURIComponent(`Resumen trámites – Jefatura de ${jef}`)}&body=${buildResumen(p)}`,'_blank');},i*400);});}
+function openPersNew(){['per-nb','per-cg','per-em'].forEach(id=>document.getElementById(id).value='');document.getElementById('ov-pers').classList.add('open');}
+async function savePers(){const nombre=document.getElementById('per-nb').value.trim();if(!nombre){alert('Nombre obligatorio');return;}personal.push({id:uid(),nombre,cargo:document.getElementById('per-cg').value.trim(),email:document.getElementById('per-em').value.trim()});await saveData('pers',personal);cls('ov-pers');renderPersonal();fillSelects();}
+async function delPers(idx){if(confirm('¿Eliminar?')){personal.splice(idx,1);await saveData('pers',personal);renderPersonal();fillSelects();}}
+
+// ═══════════════════════════════
+// PENDIENTES
+// ═══════════════════════════════
+function renderPendientes(){
+  const items=document.getElementById('pend-items');
+  if(!pendientes.length){items.innerHTML='<div style="padding:16px;font-size:12px;color:var(--text-muted)">Sin casos. Crea el primero con +</div>';return;}
+  items.innerHTML=pendientes.map((p,i)=>{
+    const steps=p.steps||[];const done=steps.filter(s=>s.done).length;const pct=steps.length?Math.round(done/steps.length*100):0;
+    return`<div class="pend-item ${i===curPendIdx?'active':''}" onclick="openPendiente(${i})">
+      <div class="pt">${p.titulo||'Sin título'}</div>
+      <div class="ps2">${done}/${steps.length} pasos • ${pct}%</div>
+      ${steps.length?`<div class="pprog"><div class="pprog-fill" style="width:${pct}%"></div></div>`:''}
+    </div>`;
+  }).join('');
+}
+function openPendiente(idx){
+  curPendIdx=idx;const p=pendientes[idx];
+  const detail=document.getElementById('pend-detail');
+  const steps=p.steps||[];const done=steps.filter(s=>s.done).length;
+  detail.innerHTML=`<div class="pend-detail" style="min-height:300px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;flex:1">${p.titulo||'Sin título'}</div>
+      <button class="btn sm" onclick="editPendTitulo(${idx})">✏️ Editar título</button>
+      <button class="btn sm danger" onclick="delPendiente(${idx})">🗑</button>
+    </div>
+    ${p.desc?`<p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5">${p.desc}</p>`:''}
+    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px">Pasos a seguir (${done}/${steps.length})</div>
+    <div class="pend-checklist">`+steps.map((s,i)=>`
+      <div class="pend-step ${s.done?'done':''}">
+        <input type="checkbox" ${s.done?'checked':''} onchange="toggleStep(${idx},${i},this.checked)">
+        <label>${s.texto}</label>
+        <button class="btn sm danger" onclick="delStep(${idx},${i})" style="padding:2px 5px;font-size:10px;flex-shrink:0">✕</button>
+      </div>`).join('')+`</div>
+    <div class="addstep"><input type="text" id="new-step-inp" placeholder="Nuevo paso a seguir…" onkeydown="if(event.key==='Enter')addStep(${idx})"><button class="btn primary" onclick="addStep(${idx})">＋ Paso</button></div>
+    <button class="guia-toggle" onclick="toggleGuia(${idx})">
+      <span>📌 Directriz del Jefe</span><span style="margin-left:auto;font-size:16px" id="guia-arrow-${idx}">${p.guia?\'▲\':\'▼\'}</span>
+    </button>
+    <div class="guia-content ${p.guia?\'open\':\'\'}" id="guia-box-${idx}">
+      <textarea id="guia-ta-${idx}" placeholder="Escribe aquí la línea a seguir, instrucciones o notas del jefe…" oninput="saveGuia(${idx})">${p.guia||\'\'}</textarea>
+    </div>
+  </div>`;
+  renderPendientes();
+}
+async function newPendiente(){
+  pendientes.push({id:uid(),titulo:'Nuevo caso',desc:'',steps:[],guia:''});
+  await saveData('pendientes',pendientes);openPendiente(pendientes.length-1);
+}
+async function editPendTitulo(idx){
+  const v=prompt('Título del caso:',pendientes[idx].titulo||'');
+  if(v!==null){pendientes[idx].titulo=v.trim()||'Sin título';await saveData('pendientes',pendientes);openPendiente(idx);}
+}
+async function toggleStep(pidx,sidx,val){
+  pendientes[pidx].steps[sidx].done=val;await saveData('pendientes',pendientes);renderPendientes();
+}
+async function addStep(pidx){
+  const inp=document.getElementById('new-step-inp');const v=inp.value.trim();if(!v)return;
+  pendientes[pidx].steps.push({texto:v,done:false});inp.value='';
+  await saveData('pendientes',pendientes);openPendiente(pidx);
+}
+async function delStep(pidx,sidx){if(confirm('¿Eliminar paso?')){pendientes[pidx].steps.splice(sidx,1);await saveData('pendientes',pendientes);openPendiente(pidx);}}
+async function delPendiente(idx){if(confirm('¿Eliminar caso?')){pendientes.splice(idx,1);curPendIdx=-1;await saveData('pendientes',pendientes);document.getElementById('pend-detail').innerHTML='<div class="pend-detail-empty"><div style="font-size:36px;opacity:.3;margin-bottom:10px">✅</div><p>Selecciona o crea un caso pendiente</p></div>';renderPendientes();}}
+let guiaTimer=null;
+function saveGuia(idx){clearTimeout(guiaTimer);guiaTimer=setTimeout(async()=>{pendientes[idx].guia=document.getElementById('guia-ta-'+idx).value;await saveData('pendientes',pendientes);},800);}
+function toggleGuia(idx){const box=document.getElementById('guia-box-'+idx);const arrow=document.getElementById('guia-arrow-'+idx);if(box){box.classList.toggle('open');if(arrow)arrow.textContent=box.classList.contains('open')?'▲':'▼';}}
+
+// ═══════════════════════════════
+// ENLACES
+// ═══════════════════════════════
+function renderEnlaces(){
+  const wrap=document.getElementById('enlace-wrap');
+  document.getElementById('empty-enlace').style.display=enlaces.length?'none':'block';
+  wrap.innerHTML=enlaces.map((en,ei)=>{
+    const items=en.items||[];
+    // Enrich items with live data
+    const enriched=items.map(it=>{
+      if(it.tipo==='proc'){const pr=procesos.find(x=>(x.id||x.exp)===it.ref||x.exp===it.ref);return pr?{...it,live:pr,liveType:'proc'}:it;}
+      if(it.tipo==='quip'){const q=quipux.find(x=>(x.id||x.numero)===it.ref||x.numero===it.ref);return q?{...it,live:q,liveType:'quip'}:it;}
+      return it;
+    });
+    const hasAlerts=enriched.some(it=>{
+      if(it.liveType==='proc')return it.live.estado==='En proceso'&&daysSince((it.live.historial||[]).slice(-1)[0]?.fechaInicio||it.live.fecha)>20;
+      if(it.liveType==='quip')return daysSince(it.live.fecha)>parseInt(it.live.plazo||15)&&it.live.estado!=='Respondido';
+      return false;
+    });
+    return`<div style="background:white;border-radius:var(--r);border:1px solid ${hasAlerts?'#FECACA':'var(--border)'};box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:14px">
+      <div style="background:${hasAlerts?'var(--rojo)':'var(--jef)'};color:white;padding:12px 18px;display:flex;align-items:center;gap:10px">
+        <div style="flex:1">
+          <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:600">${en.nombre}</div>
+          ${en.desc?`<div style="font-size:11px;opacity:.8;margin-top:2px">${en.desc}</div>`:''}
+        </div>
+        ${hasAlerts?`<span style="background:rgba(255,255,255,.25);padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600">⚠ Requiere atención</span>`:''}
+        <button class="btn sm danger" onclick="delEnlace(${ei})" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:white">🗑</button>
+      </div>
+      ${enriched.length?`<div style="padding:14px 18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">`+enriched.map((it,ii)=>{
+        if(!it.live)return`<div style="background:var(--gris-50);border-radius:var(--rs);padding:10px 12px;border:1px solid var(--border)">
+          <div style="font-weight:600;font-size:12px">${it.tipo==='proc'?'📋':it.tipo==='quip'?'📨':'📌'} ${it.ref}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${it.desc||'Sin datos'}</div>
+          <button onclick="delEnlaceItem(${ei},${ii})" style="background:none;border:none;cursor:pointer;color:var(--rojo);font-size:11px;margin-top:5px">✕ Eliminar</button>
+        </div>`;
+        if(it.liveType==='proc'){
+          const pr=it.live;const hist=pr.historial||[];const last=hist.slice(-1)[0];
+          const diasE=last?daysSince(last.fechaInicio):daysSince(pr.fecha);const diasT=daysSince(pr.fecha);
+          const sc=pr.estado==='En proceso'?'bb':pr.estado==='Cerrado'?'bgn':'bgr';
+          const alerta=pr.estado==='En proceso'&&diasE>20;
+          return`<div style="background:${alerta?'var(--rojo-light)':'var(--gris-50)'};border-radius:var(--rs);padding:11px 13px;border:1px solid ${alerta?'#FECACA':'var(--border)'};position:relative">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
+              <div><div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px">📋 Proceso</div>
+              <div style="font-weight:600;font-size:13px">${pr.exp||'Sin ref.'}</div>
+              <div style="font-size:11px;color:var(--text-muted)">${pr.servidor}</div></div>
+              <span class="badge ${sc}">${pr.estado}</span>
+            </div>
+            ${etapaBadge(pr.etapa)}
+            <div style="margin-top:8px;font-size:11px;color:var(--text-muted)">Etapa: ${diasE}d · Total: ${diasT}d</div>
+            ${alerta?`<div style="margin-top:5px;font-size:10px;color:var(--rojo);font-weight:600">⚠ Sin movimiento por ${diasE} días</div>`:''}
+            <button onclick="delEnlaceItem(${ei},${ii})" style="background:none;border:none;cursor:pointer;color:var(--rojo);font-size:10px;margin-top:6px">✕ Desvincular</button>
+          </div>`;
+        }
+        if(it.liveType==='quip'){
+          const q=it.live;const dias=daysSince(q.fecha);const plazo=parseInt(q.plazo||15);
+          const ef=(dias>plazo&&q.estado!=='Respondido')?'Vencido':q.estado;
+          const sc=ef==='Respondido'?'bgn':ef==='Vencido'?'br':'ba';const alerta=ef==='Vencido';
+          const diasResp=q.respFecha?daysBetween(q.fecha,q.respFecha):null;
+          return`<div style="background:${alerta?'var(--rojo-light)':'var(--gris-50)'};border-radius:var(--rs);padding:11px 13px;border:1px solid ${alerta?'#FECACA':'var(--border)'}">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
+              <div><div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px">📨 Quipux</div>
+              <div style="font-weight:600;font-size:13px">${q.numero||'Sin No.'}</div>
+              <div style="font-size:11px;color:var(--text-muted)">${q.asunto.slice(0,35)}</div>
+              ${q.descripcion?`<div style="font-size:10px;color:var(--text-muted);font-style:italic">${q.descripcion.slice(0,40)}</div>`:''}
+              </div>
+              <span class="badge ${sc}">${ef}</span>
+            </div>
+            <div>${pbar(dias,plazo,q.estado==='Respondido')}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:5px">Asignado: ${q.asig||'–'} · ${fmtDate(q.fecha)}</div>
+            ${ef==='Respondido'&&diasResp!==null?`<div style="font-size:11px;color:var(--verde);margin-top:3px;font-weight:500">✅ Resp. en ${diasResp}d${q.respNum?' · '+q.respNum:''}</div>`:''}
+            ${alerta?`<div style="font-size:10px;color:var(--rojo);font-weight:600;margin-top:4px">⚠ Vencido por ${dias-plazo} días</div>`:''}
+            <button onclick="delEnlaceItem(${ei},${ii})" style="background:none;border:none;cursor:pointer;color:var(--rojo);font-size:10px;margin-top:6px">✕ Desvincular</button>
+          </div>`;
+        }
+        return'';
+      }).join('')+'</div>':`<div class="empty"><div class="ei" style="font-size:28px">🔗</div><p>Sin elementos vinculados.</p></div>`}
+      <div style="padding:12px 18px;border-top:1px solid var(--border);background:var(--gris-50);display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+        <select id="en-tipo-${ei}" style="width:120px" onchange="updateEnlaceRef(${ei})"><option value="proc">📋 Proceso</option><option value="quip">📨 Quipux</option><option value="otro">📌 Otro</option></select>
+        <select id="en-ref-${ei}" style="flex:1;min-width:160px">${buildEnlaceOptions(ei)}</select>
+        <button class="btn sm primary" onclick="addEnlaceItem(${ei})">＋ Vincular</button>
+      </div>
+    </div>`;
+  }).join('');
+  enlaces.forEach((_,ei)=>{const sel=document.getElementById('en-tipo-'+ei);if(sel)sel.addEventListener('change',()=>updateEnlaceRef(ei));});
+}
+function updateEnlaceRef(ei){const ref=document.getElementById('en-ref-'+ei);if(ref)ref.innerHTML=buildEnlaceOptions(ei);}
+function buildEnlaceOptions(ei){
+  const tipoEl=document.getElementById('en-tipo-'+ei);const tipo=tipoEl?tipoEl.value:'proc';
+  if(tipo==='proc')return procesos.map(p=>`<option value="${p.id||p.exp}">${p.exp||'Sin ref.'} – ${p.servidor}</option>`).join('');
+  if(tipo==='quip')return quipux.map(q=>`<option value="${q.id||q.numero}">${q.numero||'Sin No.'} – ${q.asunto.slice(0,30)}</option>`).join('');
+  return'<option value="">Escribir referencia…</option>';
+}
+async function addEnlaceItem(ei){
+  const tipo=document.getElementById('en-tipo-'+ei).value;const refEl=document.getElementById('en-ref-'+ei);const ref=refEl.value||refEl.options[refEl.selectedIndex]?.text||'';
+  if(!ref)return;if(!enlaces[ei].items)enlaces[ei].items=[];
+  let desc='';
+  if(tipo==='proc'){const p=procesos.find(x=>(x.id||x.exp)===ref);if(p)desc=`${p.etapa} | ${p.estado}`;}
+  if(tipo==='quip'){const q=quipux.find(x=>(x.id||x.numero)===ref);if(q)desc=`Asignado: ${q.asig||'–'} | ${q.estado}`;}
+  enlaces[ei].items.push({tipo,ref,desc});
+  await saveData('enlaces',enlaces);renderEnlaces();
+}
+async function delEnlaceItem(ei,ii){enlaces[ei].items.splice(ii,1);await saveData('enlaces',enlaces);renderEnlaces();}
+function newEnlace(){document.getElementById('en-nombre').value='';document.getElementById('en-desc').value='';document.getElementById('ov-enlace').classList.add('open');}
+async function saveEnlace(){const nombre=document.getElementById('en-nombre').value.trim();if(!nombre){alert('Nombre obligatorio');return;}enlaces.push({id:uid(),nombre,desc:document.getElementById('en-desc').value.trim(),items:[]});await saveData('enlaces',enlaces);cls('ov-enlace');renderEnlaces();}
+async function delEnlace(idx){if(confirm('¿Eliminar expediente enlazado?')){enlaces.splice(idx,1);await saveData('enlaces',enlaces);renderEnlaces();}}
+
+// ═══════════════════════════════
+// PROCESOS VARIOS
+// ═══════════════════════════════
+function renderPV(){
+  const grid=document.getElementById('pv-grid');
+  document.getElementById('empty-pv').style.display=pvarios.length?'none':'block';
+  grid.style.display=pvarios.length?'grid':'none';
+  grid.innerHTML=pvarios.map((pv,pi)=>{
+    const items=pv.items||[];const done=items.filter(i=>i.done).length;
+    return`<div class="pv-box">
+      <div class="pv-box-hdr">
+        <div class="pvt">${pv.nombre}</div>
+        <button class="btn sm ghost" onclick="editPVGuia(${pi})" title="Editar guía" style="color:rgba(255,255,255,.7);padding:3px 6px">✏️</button>
+        <button class="btn sm danger" onclick="delPV(${pi})" style="padding:3px 6px">🗑</button>
+      </div>
+      <div class="pv-box-body">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${done}/${items.length} ítems completados</div>
+        <div class="pv-sub">`+items.map((it,ii)=>`
+          <div class="pv-sub-item ${it.done?'done':''}">
+            <input type="checkbox" ${it.done?'checked':''} onchange="togglePVItem(${pi},${ii},this.checked)" style="width:14px;height:14px;accent-color:var(--verde);flex-shrink:0">
+            <div style="flex:1"><div class="pvsi-t">${it.titulo}</div>${it.estado?`<div class="pvsi-s">${it.estado}</div>`:''}</div>
+            <button class="btn sm danger" onclick="delPVItem(${pi},${ii})" style="padding:2px 5px;font-size:10px;flex-shrink:0">✕</button>
+          </div>`).join('')+`</div>
+        <div class="addpvsub">
+          <input type="text" id="new-pv-inp-${pi}" placeholder="Nuevo ítem…" onkeydown="if(event.key==='Enter')addPVItem(${pi})">
+          <button class="btn sm primary" onclick="addPVItem(${pi})">＋</button>
+        </div>
+        ${pv.guia?`<div class="pv-guia"><div class="pv-guia-lbl">📌 Directriz del Jefe</div><p>${pv.guia}</p></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function newPV(){document.getElementById('pv-nombre').value='';document.getElementById('pv-guia').value='';document.getElementById('ov-pv').classList.add('open');}
+async function savePV(){const nombre=document.getElementById('pv-nombre').value.trim();if(!nombre){alert('Nombre obligatorio');return;}pvarios.push({id:uid(),nombre,guia:document.getElementById('pv-guia').value.trim(),items:[]});await saveData('pvarios',pvarios);cls('ov-pv');renderPV();}
+async function editPVGuia(pi){const v=prompt('Directriz del Jefe (línea a seguir):',pvarios[pi].guia||'');if(v!==null){pvarios[pi].guia=v.trim();await saveData('pvarios',pvarios);renderPV();}}
+async function delPV(idx){if(confirm('¿Eliminar carpeta?')){pvarios.splice(idx,1);await saveData('pvarios',pvarios);renderPV();}}
+async function addPVItem(pi){const inp=document.getElementById('new-pv-inp-'+pi);const v=inp.value.trim();if(!v)return;pvarios[pi].items.push({titulo:v,done:false,estado:''});inp.value='';await saveData('pvarios',pvarios);renderPV();}
+async function togglePVItem(pi,ii,val){pvarios[pi].items[ii].done=val;await saveData('pvarios',pvarios);renderPV();}
+async function delPVItem(pi,ii){if(confirm('¿Eliminar ítem?')){pvarios[pi].items.splice(ii,1);await saveData('pvarios',pvarios);renderPV();}}
+
+// ═══════════════════════════════
+// CALENDARIO (con rangos)
+// ═══════════════════════════════
+function renderCal(){
+  const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('cal-lbl').textContent=`${meses[calM]} ${calY}`;
+  const evts={};
+  const addE=(ds,lb,cl)=>{if(!ds)return;const[y,m,d]=ds.split('-').map(Number);if(y===calY&&m-1===calM){if(!evts[d])evts[d]=[];evts[d].push({lb,cl});}};
+  const markRange=(fi,ff,lb,cl)=>{if(!fi)return;let cur=new Date(fi);const end=ff?new Date(ff):new Date(fi);while(cur<=end){const ds=cur.toISOString().split('T')[0];addE(ds,lb,cl);cur.setDate(cur.getDate()+1);}};
+  procesos.forEach(p=>{addE(p.fecha,`📋 ${p.exp||p.servidor.split(' ')[0]}`,'ev-p');if(p.estado==='En proceso')addE(daysFromNow(p.fecha,90),`🔴 ${p.exp||'Proc.'}`,'ev-v');});
+  quipux.forEach(q=>{addE(q.fecha,`📨 ${q.numero||q.asunto.slice(0,8)}`,'ev-q');if(q.fecha&&q.plazo)addE(daysFromNow(q.fecha,parseInt(q.plazo)),`🔴 ${q.numero||'QX'}`,'ev-v');});
+  agenda.forEach(a=>{markRange(a.fechaInicio,a.fechaFin,a.titulo,a.fechaFin&&a.fechaFin!==a.fechaInicio?'ev-r':'ev-a');});
+  const fd=new Date(calY,calM,1).getDay(),dim=new Date(calY,calM+1,0).getDate(),dip=new Date(calY,calM,0).getDate();
+  const hoyStr=hoy();let html='';
+  for(let i=fd-1;i>=0;i--)html+=`<div class="cal-day om"><div class="dn">${dip-i}</div></div>`;
+  for(let d=1;d<=dim;d++){
+    const ds=`${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isT=ds===hoyStr,isS=ds===selDay,de=evts[d]||[];
+    html+=`<div class="cal-day ${isT?'today':''} ${isS?'sel':''} ${de.length?'has-ev':''}" onclick="selDay2('${ds}')">
+      <div class="dn">${d}</div>
+      ${de.slice(0,2).map(e=>`<div class="cev ${e.cl}">${e.lb}</div>`).join('')}
+      ${de.length>2?`<div class="cev bgr">+${de.length-2}</div>`:''}
+    </div>`;
+  }
+  const tot=fd+dim;const rem=tot%7===0?0:7-tot%7;
+  for(let d=1;d<=rem;d++)html+=`<div class="cal-day om"><div class="dn">${d}</div></div>`;
+  document.getElementById('cal-days').innerHTML=html;
+  renderAgPanel(selDay);
+}
+function selDay2(ds){selDay=ds;renderCal();}
+function calPrev(){calM--;if(calM<0){calM=11;calY--;}renderCal();}
+function calNext(){calM++;if(calM>11){calM=0;calY++;}renderCal();}
+function renderAgPanel(fd){
+  const list=document.getElementById('aglist');
+  document.getElementById('ag-panel-ttl').textContent=fd?`Eventos – ${fmtDate(fd)}`:'Próximos eventos';
+  let items=[];
+  procesos.forEach(p=>items.push({f:p.fecha,lb:`📋 Inicio: ${p.exp||p.servidor}`,c:'#1E40AF'}));
+  quipux.forEach(q=>{if(q.fecha&&q.plazo)items.push({f:daysFromNow(q.fecha,parseInt(q.plazo)),lb:`📨 Vence: ${q.numero||q.asunto.slice(0,20)}`,c:'#9B1C1C'});});
+  agenda.forEach((a,i)=>items.push({f:a.fechaInicio,lb:a.titulo+(a.fechaFin&&a.fechaFin!==a.fechaInicio?` → ${fmtDate(a.fechaFin)}`:''),c:'#006B3F',ai:i,h:a.horaInicio}));
+  if(fd)items=items.filter(it=>it.f===fd||(agenda[items.indexOf(it)]?.fechaFin&&it.f<=fd&&agenda[items.indexOf(it)]?.fechaFin>=fd));
+  else{const hs=hoy();items=items.filter(it=>it.f&&it.f>=hs).sort((a,b)=>a.f.localeCompare(b.f)).slice(0,22);}
+  if(!items.length){list.innerHTML='<div class="empty"><div class="ei">📅</div><p>Sin eventos.</p></div>';return;}
+  list.innerHTML=items.map(it=>`<div class="agi"><div class="agd" style="background:${it.c}"></div>
+    <div class="agc"><div class="at">${it.lb}</div>
+    <div class="as">${fmtDate(it.f)}${it.h?' – '+it.h:''}
+    ${it.ai!==undefined?`<button class="btn sm danger" onclick="delAg(${it.ai})" style="margin-left:7px;padding:1px 5px;font-size:9px">✕</button>`:''}</div></div></div>`).join('');
+}
+function openAgNew(){['ag-t','ag-n','ag-hi','ag-hf'].forEach(id=>document.getElementById(id).value='');document.getElementById('ag-fi').value=selDay||hoy();document.getElementById('ag-ff').value='';document.getElementById('ag-tp').value='agenda';document.getElementById('ov-ag').classList.add('open');}
+async function saveAg(){const titulo=document.getElementById('ag-t').value.trim();if(!titulo){alert('Título obligatorio');return;}const fi=document.getElementById('ag-fi').value;const ff=document.getElementById('ag-ff').value;if(ff&&ff<fi){alert('La fecha fin no puede ser anterior a la fecha inicio');return;}agenda.push({id:uid(),titulo,fechaInicio:fi,fechaFin:ff||fi,horaInicio:document.getElementById('ag-hi').value,horaFin:document.getElementById('ag-hf').value,tipo:document.getElementById('ag-tp').value,notas:document.getElementById('ag-n').value.trim()});await saveData('agenda',agenda);cls('ov-ag');renderCal();}
+async function delAg(idx){if(confirm('¿Eliminar evento?')){agenda.splice(idx,1);await saveData('agenda',agenda);renderCal();}}
+
+// ═══════════════════════════════
+// ESTADÍSTICAS
+// ═══════════════════════════════
+function renderEstad(){
+  const c=document.getElementById('estad-cont');
+  const total=procesos.length,enP=procesos.filter(p=>p.estado==='En proceso').length;
+  const totalQ=quipux.length,vencQ=quipux.filter(q=>daysSince(q.fecha)>parseInt(q.plazo||15)&&q.estado!=='Respondido').length;
+  const avgDias=total?Math.round(procesos.reduce((a,p)=>a+daysSince(p.fecha),0)/total):0;
+  const tasaC=total?Math.round(procesos.filter(p=>p.estado!=='En proceso').length/total*100):0;
+  const carga=personal.map(p=>({name:p.nombre.split(' ').slice(0,2).join(' '),proc:procesos.filter(pr=>pr.responsable===p.nombre&&pr.estado==='En proceso').length,quip:quipux.filter(q=>q.asig===p.nombre&&q.estado!=='Respondido').length})).sort((a,b)=>(b.proc+b.quip)-(a.proc+a.quip));
+  const maxC=carga.length?Math.max(...carga.map(d=>d.proc+d.quip),1):1;
+  const etaStats={};procesos.forEach(p=>{(p.historial||[]).forEach(h=>{if(h.fechaFin){const d=daysBetween(h.fechaInicio,h.fechaFin);if(!etaStats[h.etapa])etaStats[h.etapa]=[];etaStats[h.etapa].push(d);}});});
+  const etaArr=Object.entries(etaStats).map(([e,ds])=>({etapa:e,avg:Math.round(ds.reduce((a,b)=>a+b,0)/ds.length),n:ds.length})).sort((a,b)=>b.avg-a.avg);
+  const maxE=etaArr.length?Math.max(...etaArr.map(e=>e.avg),1):1;
+  // Tiempos respuesta quipux
+  const respTimes=quipux.filter(q=>q.estado==='Respondido'&&q.respFecha&&q.fecha).map(q=>({asig:q.asig,dias:daysBetween(q.fecha,q.respFecha)}));
+  const avgResp=respTimes.length?Math.round(respTimes.reduce((a,b)=>a+b.dias,0)/respTimes.length):0;
+  c.innerHTML=`
+  <div class="ecard"><h4>Indicadores Generales</h4><div class="kpi-grid">
+    <div class="kpi"><div class="v">${total}</div><div class="l">Total procesos</div></div>
+    <div class="kpi"><div class="v">${enP}</div><div class="l">En curso</div></div>
+    <div class="kpi"><div class="v">${avgDias}d</div><div class="l">Días promedio</div></div>
+    <div class="kpi"><div class="v">${tasaC}%</div><div class="l">Tasa cierre</div></div>
+  </div></div>
+  <div class="ecard"><h4>Quipux</h4><div class="kpi-grid">
+    <div class="kpi"><div class="v">${totalQ}</div><div class="l">Total</div></div>
+    <div class="kpi"><div class="v">${quipux.filter(q=>q.estado==='Respondido').length}</div><div class="l">Respondidos</div></div>
+    <div class="kpi"><div class="v">${vencQ}</div><div class="l">Vencidos</div></div>
+    <div class="kpi"><div class="v">${avgResp>0?avgResp+'d':'–'}</div><div class="l">Avg respuesta</div></div>
+  </div></div>
+  <div class="ecard" style="grid-column:1/-1"><h4>Carga de trabajo por persona</h4>
+    ${carga.length?carga.map(d=>`<div class="ebar"><div class="ebar-name" title="${d.name}">${d.name}</div><div class="ebar-bg"><div class="ebar-fill" style="width:${Math.round((d.proc+d.quip)/maxC*100)}%"></div></div><div class="ebar-val">${d.proc}p + ${d.quip}q</div></div>`).join(''):'<p style="color:var(--text-muted);font-size:13px">Sin personal.</p>'}
+  </div>
+  <div class="ecard" style="grid-column:1/-1"><h4>Tiempo promedio por etapa</h4>
+    ${etaArr.length?etaArr.map(e=>{const eta=etapas.find(x=>etaName(x)===e.etapa);const mx=eta?etaDays(eta):0;const ovr=mx&&e.avg>mx;return`<div class="ebar"><div class="ebar-name" title="${e.etapa}">${e.etapa.replace(/^\d+\.\s/,'')}</div><div class="ebar-bg"><div class="ebar-fill" style="width:${Math.round(e.avg/maxE*100)}%;background:${ovr?'var(--rojo)':'var(--jef)'}"></div></div><div class="ebar-val" style="color:${ovr?'var(--rojo)':'var(--text-muted)'}">${e.avg}d${mx?`/${mx}`:''}</div></div>`;}).join(''):'<p style="color:var(--text-muted);font-size:13px">Sin historial de etapas.</p>'}
+  </div>`;
+}
+
+// ═══════════════════════════════
+// NOTAS
+// ═══════════════════════════════
+function renderNotas(){
+  const items=document.getElementById('bloc-items');
+  if(!notas.length){items.innerHTML='<div style="padding:16px;font-size:12px;color:var(--text-muted)">Sin notas. Crea con +</div>';return;}
+  items.innerHTML=notas.map((n,i)=>`<div class="bnota ${i===curNotaIdx?'active':''}" onclick="openNota(${i})"><div class="bt">${n.titulo||'Sin título'}</div><div class="bd">${n.fecha||'–'}</div></div>`).join('');
+}
+function openNota(idx){curNotaIdx=idx;const n=notas[idx];document.getElementById('nota-titulo').value=n.titulo||'';document.getElementById('nota-body').value=n.body||'';document.getElementById('del-nota-btn').style.display='flex';document.getElementById('nota-saved').textContent='Guardado';renderNotas();}
+async function newNota(){notas.push({id:uid(),titulo:'Nueva nota',body:'',fecha:fmtDate(hoy())});await saveData('notas',notas);openNota(notas.length-1);}
+let noteTimer=null;
+function autoSaveNota(){if(curNotaIdx<0)return;clearTimeout(noteTimer);document.getElementById('nota-saved').textContent='Guardando…';noteTimer=setTimeout(async()=>{notas[curNotaIdx].titulo=document.getElementById('nota-titulo').value||'Sin título';notas[curNotaIdx].body=document.getElementById('nota-body').value;notas[curNotaIdx].fecha=fmtDate(hoy());await saveData('notas',notas);renderNotas();document.getElementById('nota-saved').textContent='Guardado ✓';},700);}
+async function delNota(){if(curNotaIdx<0||!confirm('¿Eliminar nota?'))return;notas.splice(curNotaIdx,1);curNotaIdx=-1;document.getElementById('nota-titulo').value='';document.getElementById('nota-body').value='';document.getElementById('del-nota-btn').style.display='none';document.getElementById('nota-saved').textContent='–';await saveData('notas',notas);renderNotas();}
+
+// ═══════════════════════════════
+// ETAPAS
+// ═══════════════════════════════
+function renderEtapas(){
+  const list=document.getElementById('etalist');
+  list.innerHTML=etapas.map((e,i)=>`<div class="etai" draggable="true" ondragstart="drgS(${i})" ondragover="drgO(event)" ondrop="drgD(event,${i})">
+    <span class="etadrg">⠿</span><div class="etanum">${i+1}</div>
+    <span class="etaname">${etaName(e)}</span>
+    <span class="eta-days">${etaDays(e)?etaDays(e)+'d':'Sin plazo'}</span>
+    <button class="btn sm ghost" onclick="editEta(${i})">✏️</button>
+    <button class="btn sm ghost" onclick="editEtaDays(${i})">⏱</button>
+    <button class="btn sm danger" onclick="delEta(${i})">🗑</button>
+  </div>`).join('');
+}
+let drgSrc=-1;
+function drgS(i){drgSrc=i;}function drgO(e){e.preventDefault();}
+async function drgD(e,i){e.preventDefault();if(drgSrc===i)return;const tmp=etapas[drgSrc];etapas[drgSrc]=etapas[i];etapas[i]=tmp;await saveData('etapas',etapas);renderEtapas();fillSelects();}
+async function addEtapa(){const n=document.getElementById('new-eta-name').value.trim();const d=parseInt(document.getElementById('new-eta-days').value)||0;if(!n)return;etapas.push({name:n,days:d});document.getElementById('new-eta-name').value='';document.getElementById('new-eta-days').value='';await saveData('etapas',etapas);renderEtapas();fillSelects();}
+async function delEta(i){if(etapas.length<=1){alert('Mínimo una etapa.');return;}if(confirm(`¿Eliminar "${etaName(etapas[i])}"?`)){etapas.splice(i,1);await saveData('etapas',etapas);renderEtapas();fillSelects();}}
+async function editEta(i){const v=prompt('Nuevo nombre:',etaName(etapas[i]));if(v&&v.trim()){etapas[i]={...etapas[i],name:v.trim()};await saveData('etapas',etapas);renderEtapas();fillSelects();}}
+async function editEtaDays(i){const v=prompt('Plazo máximo en días (0=sin plazo):',etaDays(etapas[i]));if(v!==null){etapas[i]={...etapas[i],days:parseInt(v)||0};await saveData('etapas',etapas);renderEtapas();}}
+async function resetEtapas(){if(confirm('¿Restaurar predeterminadas?')){etapas=[...DEF_ETAPAS[JEF]];await saveData('etapas',etapas);renderEtapas();fillSelects();}}
+
+// ═══════════════════════════════
+// EXPORTAR
+// ═══════════════════════════════
+function exportExcel(){
+  const jef=JEF==='eval'?'Evaluacion':'Capacitacion';
+  let csv=`HTMC IESS – Jefatura de ${JEF==='eval'?'Evaluación del Desempeño':'Capacitación y Formación'}\nFecha: ${fmtDate(hoy())}\n\nPROCESOS\nExpediente,Servidor,Cargo,Etapa,Responsable,Estado,Inicio,Días\n`;
+  procesos.forEach(p=>csv+=`"${p.exp||''}","${p.servidor}","${p.cargo||''}","${p.etapa}","${p.responsable||''}","${p.estado}","${fmtDate(p.fecha)}","${daysSince(p.fecha)}"\n`);
+  csv+=`\nQUIPUX\nNo.,Asunto,Asignado,Fecha,Plazo,Días,Estado,Fecha Resp.,No. Resp.,Cómo respondió,Días respuesta\n`;
+  quipux.forEach(q=>{const diasResp=q.respFecha?daysBetween(q.fecha,q.respFecha):'';csv+=`"${q.numero||''}","${q.asunto}","${q.asig||''}","${fmtDate(q.fecha)}","${q.plazo||15}","${daysSince(q.fecha)}","${q.estado}","${fmtDate(q.respFecha)}","${q.respNum||''}","${q.respComo||''}","${diasResp}"\n`;});
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`Reporte_${jef}_${hoy()}.csv`;a.click();
+}
+function exportPDF(){
+  const jef=JEF==='eval'?'Evaluación del Desempeño':'Capacitación y Formación';
+  const v=window.open('','_blank');
+  const enP=procesos.filter(p=>p.estado==='En proceso').length;
+  const qV=quipux.filter(q=>daysSince(q.fecha)>parseInt(q.plazo||15)&&q.estado!=='Respondido').length;
+  let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:12px;color:#1E293B;margin:24px}h1{font-size:18px;color:#003876;margin-bottom:4px}h2{font-size:13px;color:#003876;margin:18px 0 6px;border-bottom:1px solid #E2E8F0;padding-bottom:4px}.meta{font-size:11px;color:#64748B;margin-bottom:16px}table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:11px}th{background:#003876;color:white;padding:6px 8px;text-align:left}td{padding:5px 8px;border-bottom:1px solid #F1F5F9}tr:nth-child(even) td{background:#F8FAFC}.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}.bb{background:#DBEAFE;color:#1E40AF}.br{background:#FEF2F2;color:#9B1C1C}.bg{background:#E6F4EE;color:#006B3F}.bgr{background:#F1F5F9;color:#475569}.kgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}.kpi{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;padding:10px;text-align:center}.kpi .n{font-size:20px;font-weight:700;color:#003876}.kpi .l{font-size:10px;color:#64748B;text-transform:uppercase;margin-top:2px}@media print{button{display:none}}</style></head><body>`;
+  html+=`<h1>Hospital General Teodoro Maldonado Carbo – IESS</h1><div class="meta">Jefatura de ${jef} | Reporte: ${fmtDate(hoy())} <button onclick="window.print()">🖨 Imprimir</button></div>`;
+  html+=`<div class="kgrid"><div class="kpi"><div class="n">${procesos.length}</div><div class="l">Procesos</div></div><div class="kpi"><div class="n">${enP}</div><div class="l">En proceso</div></div><div class="kpi"><div class="n">${quipux.length}</div><div class="l">Quipux</div></div><div class="kpi"><div class="n">${qV}</div><div class="l">QX vencidos</div></div></div>`;
+  html+=`<h2>Procesos</h2><table><thead><tr><th>Expediente</th><th>Servidor</th><th>Etapa</th><th>Responsable</th><th>Días</th><th>Estado</th></tr></thead><tbody>`;
+  procesos.forEach(p=>{const sc=p.estado==='En proceso'?'bb':p.estado==='Cerrado'?'bg':'bgr';html+=`<tr><td>${p.exp||'–'}</td><td>${p.servidor}</td><td>${p.etapa}</td><td>${p.responsable||'–'}</td><td>${daysSince(p.fecha)}</td><td><span class="badge ${sc}">${p.estado}</span></td></tr>`;});
+  html+=`</tbody></table><h2>Quipux Reasignados</h2><table><thead><tr><th>No. Quipux</th><th>Asunto</th><th>Asignado</th><th>Días</th><th>Estado</th><th>Fecha Resp.</th><th>No. Resp.</th><th>Días respuesta</th></tr></thead><tbody>`;
+  quipux.forEach(q=>{const ef=daysSince(q.fecha)>parseInt(q.plazo||15)&&q.estado!=='Respondido'?'Vencido':q.estado;const sc=ef==='Respondido'?'bg':ef==='Vencido'?'br':'bb';const dr=q.respFecha?daysBetween(q.fecha,q.respFecha):'–';html+=`<tr><td>${q.numero||'–'}</td><td>${q.asunto}</td><td>${q.asig||'–'}</td><td>${daysSince(q.fecha)}</td><td><span class="badge ${sc}">${ef}</span></td><td>${fmtDate(q.respFecha)}</td><td>${q.respNum||'–'}</td><td>${dr}</td></tr>`;});
+  html+=`</tbody></table></body></html>`;
+  v.document.write(html);v.document.close();
+}
+
+// ═══════════════════════════════
+// BÚSQUEDA GLOBAL
+// ═══════════════════════════════
+function globalSearch(q){
+  const box=document.getElementById('gsr');if(!q||q.length<2){box.classList.remove('open');return;}
+  const ql=q.toLowerCase();let results=[];
+  procesos.forEach((p,i)=>{if(((p.exp||'')+p.servidor+(p.cargo||'')).toLowerCase().includes(ql))results.push({title:`📋 ${p.exp||'–'} – ${p.servidor}`,sub:`${p.etapa} | ${p.estado}`,action:()=>{showTab('procesos');setTimeout(()=>openDet(i),100);}});});
+  quipux.forEach((q2)=>{if(((q2.numero||'')+q2.asunto+(q2.asig||'')).toLowerCase().includes(ql))results.push({title:`📨 ${q2.numero||'–'} – ${q2.asunto.slice(0,28)}`,sub:`${q2.asig||'–'} | ${q2.estado}`,action:()=>showTab('quipux')});});
+  personal.forEach(p=>{if(p.nombre.toLowerCase().includes(ql))results.push({title:`👤 ${p.nombre}`,sub:p.cargo||'Sin cargo',action:()=>showTab('personal')});});
+  pendientes.forEach((p,i)=>{if((p.titulo||'').toLowerCase().includes(ql))results.push({title:`✅ ${p.titulo}`,sub:`${(p.steps||[]).filter(s=>s.done).length}/${(p.steps||[]).length} pasos`,action:()=>{showTab('pendientes');setTimeout(()=>openPendiente(i),100);}});});
+  if(!results.length){box.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px">Sin resultados</div>';box.classList.add('open');return;}
+  box.innerHTML=results.slice(0,8).map((r,i)=>`<div class="gsr-item" onclick="gsrClick(${i})"><div class="gsr-t">${r.title}</div><div class="gsr-s">${r.sub}</div></div>`).join('');
+  box._results=results;box.classList.add('open');
+}
+function gsrClick(i){const r=document.getElementById('gsr')._results[i];if(r)r.action();document.getElementById('gsearch').value='';document.getElementById('gsr').classList.remove('open');}
+
+// ═══════════════════════════════
+// FECHA HEADER
+// ═══════════════════════════════
+function initFecha(){
+  const d=new Date();const dias=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];const meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('fdia').textContent=dias[d.getDay()];document.getElementById('ffull').textContent=`${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+// ═══════════════════════════════
+// INIT
+// ═══════════════════════════════
+async function init(){
+  initFecha();
+  await loadAll();
+  fillSelects();
+  renderAlertas();
+}
+init();
+</script>
+</body>
+</html>
